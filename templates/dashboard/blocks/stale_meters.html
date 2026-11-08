@@ -1,0 +1,9 @@
+{% load i18n %}<section class="card-em h-100">
+  <h2>{% translate "Compteurs sans relevé récent" %}</h2>
+  {% for meter in stale_list %}
+    <div class="d-flex justify-content-between align-items-baseline gap-2 py-1">
+      <a href="{{ meter.equipment.get_absolute_url }}?onglet=compteurs">{{ meter.equipment.code }} · {{ meter.name }}</a>
+      <span class="muted small text-nowrap">{% if meter.last_reading_at %}{{ meter.last_reading_at|date:"d/m/Y" }}{% else %}{% translate "jamais" %}{% endif %}</span>
+    </div>
+  {% empty %}<p class="muted mb-0">{% translate "Tous les compteurs sont à jour." %}</p>{% endfor %}
+</section>

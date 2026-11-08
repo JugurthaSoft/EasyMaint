@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% translate "Journal d'activité" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% translate "Journal d'activité" %}</h1><p class="sub">{% translate "Connexions et modifications, conservées sans possibilité d'effacement." %}</p></div></div>
+<form class="d-flex flex-wrap gap-2 mb-3" method="get">
+  <input class="form-control" style="max-width:320px" type="search" name="q" value="{{ request.GET.q }}" placeholder="{% translate 'Utilisateur ou objet…' %}" aria-label="{% translate 'Filtrer' %}">
+  <select class="form-select" style="max-width:220px" name="action" aria-label="{% translate 'Action' %}" data-autosubmit>
+    <option value="">{% translate "Toutes les actions" %}</option>
+    {% for value, label in actions %}<option value="{{ value }}"{% if request.GET.action == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <button class="btn btn-outline-secondary" type="submit">{% translate "Filtrer" %}</button>
+</form>
+<div class="table-wrap">
+  <table class="table-em">
+    <thead><tr><th>{% translate "Date" %}</th><th>{% translate "Utilisateur" %}</th><th>{% translate "Action" %}</th><th>{% translate "Objet" %}</th><th>{% translate "Détail" %}</th><th>{% translate "Adresse IP" %}</th></tr></thead>
+    <tbody>
+    {% for entry in entries %}
+      <tr>
+        <td class="mono text-nowrap">{{ entry.at|date:"d/m/Y H:i" }}</td>
+        <td>{{ entry.user|default:entry.username }}</td>
+        <td>{{ entry.get_action_display }}</td>
+        <td>{{ entry.object_repr|default:"—" }}</td>
+        <td class="small">{% for field, values in entry.changes.items %}<div><span class="fw-semibold">{{ field }}</span> : {% if values.0 %}{{ values.0 }} → {% endif %}{{ values.1 }}</div>{% endfor %}</td>
+        <td class="mono small">{{ entry.ip_address|default:"" }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6" class="empty-state">{% translate "Aucune entrée." %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "partials/_pagination.html" %}
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% load i18n easymaint static %}
+{% block title %}{% translate "Accueil" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{% blocktranslate with name=user.first_name|default:user.username %}Bonjour {{ name }}{% endblocktranslate %}</h1>
+    <p class="sub">{{ today|date:"l d/m/Y"|capfirst }} · {{ tenant.name }}</p>
+  </div>
+  {% if has_any_block %}<a class="btn btn-outline-secondary" href="{% url 'dashboard:customize' %}">{% icon "settings" %} {% translate "Personnaliser l'accueil" %}</a>{% endif %}
+</div>
+{% if blocks %}
+<div class="row g-3">
+  {% for block in blocks %}
+    <div class="{% if block.width == 'full' %}col-12{% else %}col-xl-6{% endif %}" data-block="{{ block.key }}">{% include block.template %}</div>
+  {% endfor %}
+</div>
+{% elif has_any_block %}
+<div class="card-em empty-state">{% translate "Vous avez masqué tous les blocs." %} <a href="{% url 'dashboard:customize' %}">{% translate "Personnaliser l'accueil" %}</a></div>
+{% else %}
+<div class="card-em">{% translate "Bienvenue dans EasyMaint. Votre rôle ne donne pas encore accès à des modules ; contactez l'administrateur." %}</div>
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+{% if needs_chart %}
+<script src="{% static 'vendor/chart.umd.min.js' %}"></script>
+<script src="{% static 'js/dashboard_charts.js' %}"></script>
+{% endif %}
+{% endblock %}

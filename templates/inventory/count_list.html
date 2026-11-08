@@ -1,0 +1,31 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Inventaires" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% translate "Magasin" %}</h1><p class="sub">{% translate "Inventaires physiques : comptage, écarts, régularisation du stock." %}</p></div></div>
+{% include "inventory/_nav.html" with section="counts" %}
+<div class="row g-3">
+  {% if user|can:"stock.count" %}
+  <div class="col-xl-4">
+    <form method="post" novalidate class="card-em">{% csrf_token %}
+      <h2>{% translate "Ouvrir un inventaire" %}</h2>
+      {% include "partials/_form.html" %}
+      <p class="small muted">{% translate "Le stock théorique de chaque article est relevé à l'ouverture. À la validation, le stock est porté à la quantité comptée ; les articles non comptés ne changent pas. Évitez les mouvements pendant le comptage." %}</p>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">{% translate "Ouvrir" %}</button></div>
+    </form>
+  </div>
+  {% endif %}
+  <div class="col-xl-8">
+    <div class="table-wrap"><table class="table-em">
+      <thead><tr><th>{% translate "N°" %}</th><th>{% translate "Magasin" %}</th><th>{% translate "Famille" %}</th><th>{% translate "Ouvert le" %}</th><th>{% translate "Statut" %}</th><th>{% translate "Validé" %}</th></tr></thead>
+      <tbody>
+      {% for c in counts %}
+        <tr><td class="mono"><a href="{{ c.get_absolute_url }}">{{ c.number }}</a></td><td>{{ c.warehouse }}</td><td>{{ c.family|default:"—" }}</td><td class="mono small">{{ c.started_at|date:"d/m/Y H:i" }}</td>
+          <td><span class="badge-em {% if c.status == 'open' %}b-blue{% elif c.status == 'validated' %}b-green{% else %}b-gray{% endif %}">{{ c.get_status_display }}</span></td>
+          <td class="small">{% if c.validated_at %}{{ c.validated_at|date:"d/m/Y" }} · {{ c.validated_by }}{% else %}—{% endif %}</td></tr>
+      {% empty %}<tr><td colspan="6" class="empty-state">{% translate "Aucun inventaire." %}</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+    {% include "partials/_pagination.html" %}
+  </div>
+</div>
+{% endblock %}

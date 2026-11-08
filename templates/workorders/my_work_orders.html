@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Mes interventions" %}{% endblock %}
+{% block content %}
+<div class="execute-wrap">
+  <div class="page-head mb-0">
+    <div><h1>{% translate "Mes interventions" %}</h1><p class="sub">{% if technician %}{{ technician }}{% endif %}</p></div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{% url 'workorders:request_create' %}">{% translate "Déclarer une panne" %}</a>
+      {% if user|can:"workorders.create_direct" %}<a class="btn btn-primary" href="{% url 'workorders:wo_create' %}">{% icon "plus" %} {% translate "OT urgent" %}</a>{% endif %}
+    </div>
+  </div>
+  {% if not technician %}
+    <div class="card-em">{% translate "Votre compte n'est relié à aucune fiche technicien. Demandez au responsable maintenance de le faire dans Équipes." %}</div>
+  {% else %}
+    {% for wo in open_orders %}
+      <a class="card-em d-block text-body" href="{% url 'workorders:wo_execute' wo.pk %}" style="text-decoration:none">
+        <div class="d-flex justify-content-between gap-2 mb-1"><span class="fw-bold mono">{{ wo.number }}</span><span class="badge-em {{ wo.status_badge }}">{{ wo.get_status_display }}</span></div>
+        <div class="fw-semibold">{{ wo.title }}</div>
+        <div class="muted small">{{ wo.equipment.code }} · {{ wo.equipment.designation }}</div>
+        <div class="d-flex flex-wrap gap-2 mt-2"><span class="badge-em {{ wo.kind_badge }}">{{ wo.get_kind_display }}</span><span class="badge-em {{ wo.priority_badge }}">P{{ wo.priority }}</span>{% if wo.is_late %}<span class="badge-em b-red">{% translate "En retard" %}</span>{% elif wo.due_date %}<span class="badge-em b-gray">{% translate "Échéance" %} {{ wo.due_date|date:"d/m/Y" }}</span>{% endif %}</div>
+      </a>
+    {% empty %}
+      <div class="card-em empty-state">{% translate "Aucun OT ouvert à votre nom." %}</div>
+    {% endfor %}
+    {% if recent_done %}
+      <h2 class="h6 fw-semibold mt-3 mb-0">{% translate "Récemment terminés" %}</h2>
+      {% for wo in recent_done %}
+        <a class="d-flex justify-content-between gap-2 py-2 border-bottom text-body" href="{{ wo.get_absolute_url }}"><span><span class="mono">{{ wo.number }}</span> · {{ wo.title|truncatechars:40 }}</span><span class="badge-em {{ wo.status_badge }}">{{ wo.get_status_display }}</span></a>
+      {% endfor %}
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

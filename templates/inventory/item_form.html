@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% if object %}{{ object.reference }}{% else %}{% translate "Nouvel article" %}{% endif %}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'inventory:item_list' %}">{% translate "Magasin" %}</a> › {% if object %}<a href="{{ object.get_absolute_url }}">{{ object.reference }}</a> › {% translate "Modifier" %}{% else %}{% translate "Nouvel article" %}{% endif %}</div>
+<div class="page-head"><div><h1>{% if object %}{% translate "Modifier l'article" %}{% else %}{% translate "Nouvel article" %}{% endif %}</h1>{% if object %}<p class="sub">{{ object }}</p>{% endif %}</div></div>
+<form method="post" enctype="multipart/form-data" novalidate class="card-em" style="max-width:860px">{% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+  <div class="row"><div class="col-md-4">{% include "partials/_field.html" with field=form.reference %}</div><div class="col-md-8">{% include "partials/_field.html" with field=form.designation %}</div></div>
+  <div class="row"><div class="col-md-4">{% include "partials/_field.html" with field=form.family %}</div><div class="col-md-4">{% include "partials/_field.html" with field=form.brand %}</div><div class="col-md-4">{% include "partials/_field.html" with field=form.unit %}</div></div>
+  <div class="row"><div class="col-md-6">{% include "partials/_field.html" with field=form.manufacturer %}</div><div class="col-md-6">{% include "partials/_field.html" with field=form.manufacturer_reference %}</div></div>
+  <div class="row"><div class="col-md-3">{% include "partials/_field.html" with field=form.unit_price %}</div><div class="col-md-3">{% include "partials/_field.html" with field=form.min_stock %}</div><div class="col-md-3">{% include "partials/_field.html" with field=form.max_stock %}</div><div class="col-md-3">{% include "partials/_field.html" with field=form.lead_time_days %}</div></div>
+  <div class="row"><div class="col-md-6">{% include "partials/_field.html" with field=form.photo %}</div><div class="col-md-6">{% include "partials/_field.html" with field=form.datasheet %}</div></div>
+  {% include "partials/_field.html" with field=form.notes %}
+  <div class="row"><div class="col-md-6">{% include "partials/_field.html" with field=form.is_critical %}</div><div class="col-md-6">{% include "partials/_field.html" with field=form.is_active %}</div></div>
+  <div class="form-actions">
+    <a class="btn btn-outline-secondary" href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'inventory:item_list' %}{% endif %}">{% translate "Annuler" %}</a>
+    <button class="btn btn-primary" type="submit">{% translate "Enregistrer" %}</button>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% if is_issue %}{% translate "Bon de sortie" %}{% else %}{% translate "Bon de retour" %}{% endif %} {{ movement.number }}{% endblock %}
+{% block content %}
+<div class="page-head no-print">
+  <div><h1>{% if is_issue %}{% translate "Bon de sortie de magasin" %}{% else %}{% translate "Bon de retour en magasin" %}{% endif %}</h1>
+    <p class="sub">{% translate "À imprimer en deux exemplaires et à faire signer au comptoir : un pour le magasin, un pour le technicien." %}</p></div>
+  <button class="btn btn-primary" type="button" data-print>{% icon "printer" %} {% translate "Imprimer" %}</button>
+</div>
+<article class="slip card-em">
+  <header class="d-flex justify-content-between align-items-start border-bottom pb-2 mb-3">
+    <div>
+      <div class="fw-bold fs-5">{{ tenant.name }}</div>
+      <div class="small">{{ movement.warehouse }}</div>
+    </div>
+    <div class="text-end">
+      <div class="fw-bold fs-5 text-uppercase">{% if is_issue %}{% translate "Bon de sortie" %}{% else %}{% translate "Bon de retour" %}{% endif %}</div>
+      <div class="mono">{{ movement.number }}</div>
+      <div class="small">{{ movement.moved_at|date:"d/m/Y H:i" }}</div>
+    </div>
+  </header>
+
+  <div class="row g-2 mb-3 small">
+    {% if work_order %}
+      <div class="col-6"><span class="muted">{% translate "Ordre de travail" %} :</span> <span class="mono fw-semibold">{{ work_order.number }}</span><div>{{ work_order.title }}</div></div>
+    {% else %}
+      <div class="col-6"><span class="muted">{% translate "Motif" %} :</span> {{ movement.reason|default:"—" }}{% if movement.document %}<div><span class="muted">{% translate "Document" %} :</span> {{ movement.document }}</div>{% endif %}</div>
+    {% endif %}
+    <div class="col-6">{% if equipment %}<span class="muted">{% translate "Équipement" %} :</span> <span class="mono fw-semibold">{{ equipment.code }}</span><div>{{ equipment.designation }}</div>{% endif %}
+      {% if technicians %}<div><span class="muted">{% translate "Technicien(s) de l'OT" %} :</span> {{ technicians|join:", " }}</div>{% endif %}</div>
+  </div>
+
+  <table class="table table-sm table-bordered align-middle">
+    <thead><tr><th>{% translate "Mouvement" %}</th><th>{% translate "Référence" %}</th><th>{% translate "Désignation" %}</th><th>{% translate "Emplacement" %}</th><th class="text-end">{% translate "Quantité" %}</th><th>{% translate "Unité" %}</th></tr></thead>
+    <tbody>
+    {% for line in lines %}
+      <tr><td class="mono small">{{ line.number }}</td><td class="mono">{{ line.item.reference }}</td><td>{{ line.item.designation }}</td><td class="mono small">{{ line.bin_location|default:"" }}</td><td class="text-end fw-semibold">{{ line.abs_quantity|number }}</td><td>{{ line.item.get_unit_display }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if not is_issue and movement.reason %}<p class="small"><span class="muted">{% translate "Motif du retour" %} :</span> {{ movement.reason }}</p>{% endif %}
+
+  <div class="row g-3 mt-4 slip-signatures">
+    <div class="col-6">
+      <div class="border rounded-2 p-2">
+        <div class="fw-semibold">{% if is_issue %}{% translate "Remis par (magasin)" %}{% else %}{% translate "Réceptionné par (magasin)" %}{% endif %}</div>
+        <div class="small">{{ movement.created_by.get_full_name|default:movement.created_by|default:"" }}</div>
+        <div class="small mt-2">{% translate "Date" %} : ____ / ____ / ________</div>
+        <div class="small mt-3">{% translate "Signature" %} :</div>
+        <div style="height:70px"></div>
+      </div>
+    </div>
+    <div class="col-6">
+      <div class="border rounded-2 p-2">
+        <div class="fw-semibold">{% if is_issue %}{% translate "Reçu par (technicien)" %}{% else %}{% translate "Rapporté par (technicien)" %}{% endif %}</div>
+        <div class="small">{% translate "Nom" %} : ______________________________</div>
+        <div class="small mt-2">{% translate "Date" %} : ____ / ____ / ________</div>
+        <div class="small mt-3">{% translate "Signature" %} :</div>
+        <div style="height:70px"></div>
+      </div>
+    </div>
+  </div>
+  <p class="small muted mt-3 mb-0">{% if is_issue %}{% translate "Le signataire reconnaît avoir reçu les pièces ci-dessus, en bon état et dans les quantités indiquées." %}{% else %}{% translate "Le magasin reconnaît avoir repris les pièces ci-dessus, dans les quantités indiquées." %}{% endif %}
+    · {% translate "Édité le" %} {{ printed_at|date:"d/m/Y H:i" }} · EasyMaint</p>
+</article>
+{% endblock %}

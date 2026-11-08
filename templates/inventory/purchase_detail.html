@@ -1,0 +1,62 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Demande d'achat" %} {{ purchase.number }}{% endblock %}
+{% block content %}
+<div class="page-head no-print">
+  <div><div class="breadcrumb-em"><a href="{% url 'inventory:purchase_list' %}">{% translate "Demandes d'achat" %}</a> › {{ purchase.number }}</div>
+    <h1>{% translate "Demande d'achat" %} {{ purchase.number }}</h1>
+    <p class="sub">{% translate "Imprimez-la, faites-la signer, puis transmettez-la au service achats." %}</p></div>
+  <div class="d-flex flex-wrap gap-2">
+    <button class="btn btn-primary" type="button" data-print>{% icon "printer" %} {% translate "Imprimer" %}</button>
+    {% if user|can:"purchasing.request" %}
+      <a class="btn btn-outline-secondary" href="{% url 'inventory:purchase_update' purchase.pk %}">{% icon "edit" %} {% translate "Modifier" %}</a>
+      <form method="post" action="{% url 'inventory:purchase_delete' purchase.pk %}">{% csrf_token %}<button class="btn btn-link text-danger" type="submit">{% translate "Supprimer" %}</button></form>
+    {% endif %}
+  </div>
+</div>
+<article class="slip card-em">
+  <header class="d-flex justify-content-between align-items-start border-bottom pb-2 mb-3">
+    <div><div class="fw-bold fs-5">{{ tenant.name }}</div><div class="small">{% translate "Service maintenance" %}</div></div>
+    <div class="text-end">
+      <div class="fw-bold fs-5 text-uppercase">{% translate "Demande d'achat" %}</div>
+      <div class="mono">{{ purchase.number }}</div>
+      <div class="small">{% translate "du" %} {{ purchase.requested_on|date:"d/m/Y" }}</div>
+      {% if purchase.is_urgent %}<div class="fw-bold text-danger text-uppercase">{% translate "Urgent" %}</div>{% endif %}
+    </div>
+  </header>
+  <div class="row g-2 mb-3 small">
+    <div class="col-6">
+      <div><span class="muted">{% translate "Fournisseur suggéré" %} :</span> {% if purchase.supplier %}<span class="fw-semibold">{{ purchase.supplier }}</span>{% if purchase.supplier.phone %} · {{ purchase.supplier.phone }}{% endif %}{% else %}{% translate "à définir par le service achats" %}{% endif %}</div>
+      <div><span class="muted">{% translate "Date souhaitée" %} :</span> {{ purchase.needed_by|date:"d/m/Y"|default:"—" }}</div>
+    </div>
+    <div class="col-6">
+      <div><span class="muted">{% translate "Motif" %} :</span> {{ purchase.reason|default:"—" }}</div>
+      {% if purchase.work_order %}<div><span class="muted">{% translate "OT" %} :</span> <span class="mono">{{ purchase.work_order.number }}</span> · {{ purchase.work_order.title }}</div>{% endif %}
+      {% if purchase.equipment %}<div><span class="muted">{% translate "Équipement" %} :</span> <span class="mono">{{ purchase.equipment.code }}</span> · {{ purchase.equipment.designation }}</div>{% endif %}
+    </div>
+  </div>
+  <table class="table table-sm table-bordered align-middle">
+    <thead><tr><th>#</th><th>{% translate "Référence" %}</th><th>{% translate "Désignation" %}</th><th class="text-end">{% translate "Quantité" %}</th><th>{% translate "Unité" %}</th><th class="text-end">{% translate "Prix estimé HT" %}</th><th class="text-end">{% translate "Montant estimé HT" %}</th></tr></thead>
+    <tbody>
+    {% for line in lines %}
+      <tr><td>{{ forloop.counter }}</td><td class="mono">{{ line.reference|default:"" }}{% if line.item and line.item.reference != line.reference %}<div class="small muted">{% translate "magasin" %} {{ line.item.reference }}</div>{% endif %}</td>
+        <td>{{ line.designation }}</td><td class="text-end fw-semibold">{{ line.quantity|number }}</td><td>{{ line.unit }}</td>
+        <td class="text-end">{% if line.estimated_price is not None %}{{ line.estimated_price|money }}{% endif %}</td><td class="text-end">{% if line.estimated_price is not None %}{{ line.estimated_total|money }}{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+    {% if total %}<tfoot><tr><th colspan="6" class="text-end">{% translate "Total estimé HT" %}</th><th class="text-end">{{ total|money }}</th></tr></tfoot>{% endif %}
+  </table>
+  {% if purchase.notes %}<p class="small"><span class="muted">{% translate "Observations" %} :</span> {{ purchase.notes|linebreaksbr }}</p>{% endif %}
+  <div class="row g-3 mt-4">
+    <div class="col-4"><div class="border rounded-2 p-2">
+      <div class="fw-semibold">{% translate "Demandé par" %}</div><div class="small">{{ purchase.created_by.get_full_name|default:purchase.created_by|default:"" }}</div>
+      <div class="small mt-3">{% translate "Signature" %} :</div><div style="height:60px"></div></div></div>
+    <div class="col-4"><div class="border rounded-2 p-2">
+      <div class="fw-semibold">{% translate "Visa du responsable maintenance" %}</div><div class="small">{% translate "Nom" %} : ____________________</div>
+      <div class="small mt-2">{% translate "Signature" %} :</div><div style="height:60px"></div></div></div>
+    <div class="col-4"><div class="border rounded-2 p-2">
+      <div class="fw-semibold">{% translate "Reçu par le service achats" %}</div><div class="small">{% translate "Date" %} : ____ / ____ / ________</div>
+      <div class="small mt-2">{% translate "Signature" %} :</div><div style="height:60px"></div></div></div>
+  </div>
+  <p class="small muted mt-3 mb-0">{% translate "Les prix sont indicatifs (dernier prix connu). La commande, la réception et la facture sont gérées par le service achats." %} · EasyMaint</p>
+</article>
+{% endblock %}

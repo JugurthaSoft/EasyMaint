@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Sauvegardes" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% translate "Sauvegardes" %}</h1>
+  <p class="sub">{% blocktranslate %}Sauvegarde automatique chaque nuit à partir de {{ hour }} h (base de données et fichiers joints), conservée {{ keep_days }} jours dans le dossier « sauvegardes » du serveur.{% endblocktranslate %}</p></div></div>
+
+{% if not folder_found %}
+  <div class="alert alert-warning">{% translate "Le dossier des sauvegardes n'est pas visible par l'application. Vérifiez que le service « backup » tourne : docker compose ps" %}</div>
+{% elif stale %}
+  <div class="alert alert-danger">{% if latest %}{% blocktranslate with d=latest.at|date:"d/m/Y H:i" %}La dernière sauvegarde date du {{ d }} : plus de 2 jours. Vérifiez le service « backup » (docker compose logs backup).{% endblocktranslate %}{% else %}{% translate "Aucune sauvegarde trouvée. Vérifiez le service « backup » (docker compose logs backup)." %}{% endif %}</div>
+{% else %}
+  <div class="alert alert-success">{% blocktranslate with d=latest.at|date:"d/m/Y H:i" %}Dernière sauvegarde : {{ d }}.{% endblocktranslate %}</div>
+{% endif %}
+
+<div class="card-em mb-3">
+  <h2>{% translate "Bonnes pratiques" %}</h2>
+  <ul class="small mb-0">
+    <li>{% translate "Copiez régulièrement le dossier « sauvegardes » hors du serveur (disque externe, NAS) : une sauvegarde restée sur la même machine ne protège ni d'une panne de disque ni d'un vol." %}</li>
+    <li>{% translate "Sauvegarde immédiate (avant une mise à jour par exemple) : docker compose exec backup sh /scripts/backup_daemon.sh --maintenant" %}</li>
+    <li>{% translate "Restauration : voir le guide d'installation, section « Sauvegarde et restauration »." %}</li>
+  </ul>
+</div>
+
+<div class="table-wrap"><table class="table-em">
+  <thead><tr><th>{% translate "Date" %}</th><th>{% translate "Contenu" %}</th><th>{% translate "Fichier" %}</th><th class="text-end">{% translate "Taille" %}</th></tr></thead>
+  <tbody>
+  {% for f in files %}
+    <tr><td class="mono small">{{ f.at|date:"d/m/Y H:i" }}</td><td class="small">{% if f.kind == "base" %}{% translate "Base de données" %}{% else %}{% translate "Fichiers joints" %}{% endif %}</td>
+      <td class="mono small">{{ f.name }}</td><td class="text-end small">{{ f.size|filesizeformat }}</td></tr>
+  {% empty %}
+    <tr><td colspan="4" class="empty-state">{% translate "Aucune sauvegarde pour l'instant." %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endblock %}

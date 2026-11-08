@@ -1,0 +1,14 @@
+{% load i18n easymaint %}<section class="card-em h-100" aria-labelledby="stock-title">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h2 id="stock-title" class="mb-0">{% translate "Stock sous le minimum" %} {% if stock.below_count %}<span class="badge-em b-orange">{{ stock.below_count }}</span>{% endif %}</h2>
+    <span class="small"><a class="fw-semibold" href="{% url 'inventory:item_list' %}?etat=sous-mini">{% translate "Tous les articles" %}</a>{% if stock.open_requests %} · <a href="{% url 'inventory:request_queue' %}">{% blocktranslate with n=stock.open_requests %}{{ n }} pièce(s) à délivrer{% endblocktranslate %}</a>{% endif %}</span>
+  </div>
+  {% for i in stock.below %}
+    <div class="d-flex flex-wrap align-items-center gap-2 py-2 border-bottom">
+      <a class="mono fw-semibold" href="{{ i.get_absolute_url }}">{{ i.reference }}</a>
+      <span class="small">{{ i.designation }}</span>{% if i.is_critical %}<span class="badge-em b-red">{% translate "critique" %}</span>{% endif %}
+      <span class="mono ms-auto">{{ i.available|number }} / {{ i.min_stock|number }}</span>
+    </div>
+  {% empty %}<p class="muted mb-0">{% translate "Aucun article sous son stock minimum." %}</p>{% endfor %}
+  <p class="small muted mt-2 mb-0">{% translate "Valeur du stock" %} : <span class="mono">{{ stock.value|money }}</span></p>
+</section>

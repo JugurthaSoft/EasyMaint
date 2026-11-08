@@ -1,0 +1,64 @@
+{% extends "base.html" %}{% load i18n easymaint static %}
+{% block title %}{% translate "Coûts de maintenance" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% translate "Coûts et budget" %}</h1><p class="sub">{{ definition }}</p></div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'finance:costs_export' %}?{{ query }}">{% icon "download" %} {% translate "Excel" %}</a>
+    <a class="btn btn-outline-secondary" href="{% url 'finance:costs_pdf' %}?{{ query }}" target="_blank" rel="noopener">{% icon "printer" %} {% translate "Rapport PDF" %}</a>
+  </div>
+</div>
+{% include "finance/_nav.html" with section="costs" %}
+<form method="get" class="card-em mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-6 col-md-2"><label class="form-label small" for="c-du">{% translate "Du" %}</label><input class="form-control" id="c-du" type="date" name="du" value="{{ f.start|date:'Y-m-d' }}"></div>
+    <div class="col-6 col-md-2"><label class="form-label small" for="c-au">{% translate "Au" %}</label><input class="form-control" id="c-au" type="date" name="au" value="{{ f.end|date:'Y-m-d' }}"></div>
+    <div class="col-md-2"><label class="form-label small" for="c-by">{% translate "Regrouper par" %}</label><select class="form-select" id="c-by" name="regroupement">{% for v, l in groupings %}<option value="{{ v }}"{% if f.by == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><label class="form-label small" for="c-unit">{% translate "Unité" %}</label><select class="form-select" id="c-unit" name="unite"><option value="">{% translate "Toutes" %}</option>{% for u in units %}<option value="{{ u.pk }}"{% if f.unit.pk == u.pk %} selected{% endif %}>{{ u.name }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><label class="form-label small" for="c-fam">{% translate "Famille" %}</label><select class="form-select" id="c-fam" name="famille"><option value="">{% translate "Toutes" %}</option>{% for fam in families %}<option value="{{ fam.pk }}"{% if f.family.pk == fam.pk %} selected{% endif %}>{{ fam.name }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><label class="form-label small" for="c-type">{% translate "Type" %}</label><select class="form-select" id="c-type" name="type"><option value="">{% translate "Tous" %}</option>{% for v, l in kinds %}<option value="{{ v }}"{% if f.kind == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+  </div>
+  {% if f.equipment %}<input type="hidden" name="equipement_id" value="{{ f.equipment.pk }}"><p class="small mt-2 mb-0">{% translate "Équipement" %} : <strong>{{ f.equipment }}</strong> · <a href="?du={{ f.start|date:'Y-m-d' }}&au={{ f.end|date:'Y-m-d' }}&regroupement={{ f.by }}">{% translate "retirer ce filtre" %}</a></p>{% endif %}
+  <div class="mt-2"><button class="btn btn-primary" type="submit">{% translate "Afficher" %}</button></div>
+</form>
+
+<section class="tiles mb-3">
+  <div class="tile"><span class="lbl">{% translate "Coût total" %}</span><span class="val">{{ total.total|money }}</span><span class="sub">{{ total.count }} {% translate "OT validés" %}</span></div>
+  {% for name, label in categories %}<div class="tile"><span class="lbl">{{ label }}</span><span class="val" style="font-size:22px">{% if name == "labour" %}{{ total.labour|money }}{% elif name == "parts" %}{{ total.parts|money }}{% elif name == "external" %}{{ total.external|money }}{% else %}{{ total.other|money }}{% endif %}</span></div>{% endfor %}
+</section>
+
+<div class="row g-3">
+  <div class="col-xl-7">
+    <section class="card-em"><h2>{% translate "Répartition par catégorie de coût" %}</h2>
+      {% if rows %}<div class="chart-box" style="height:{% if rows|length > 8 %}420{% else %}300{% endif %}px"><canvas data-costs="cost-chart" data-type="{% if f.by == 'mois' %}bar{% else %}hbar{% endif %}" aria-label="{% translate 'Coûts par catégorie' %}"></canvas></div>{{ chart|json_script:"cost-chart" }}
+      {% else %}<p class="muted mb-0">{% translate "Aucun coût sur cette période." %}</p>{% endif %}
+    </section>
+  </div>
+  <div class="col-xl-5">
+    <section class="card-em"><h2>{% blocktranslate with y=trend.year %}Évolution mensuelle {{ y }}{% endblocktranslate %}</h2>
+      <div class="chart-box" style="height:300px"><canvas data-trend="cost-trend" aria-label="{% translate 'Évolution mensuelle des coûts' %}"></canvas></div>{{ trend|json_script:"cost-trend" }}
+      <p class="small muted mt-2 mb-0">{{ trend.year }} : <span class="mono">{{ year_total|money }}</span> · {{ trend.year|add:"-1" }} : <span class="mono">{{ previous_total|money }}</span></p>
+    </section>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <table class="table-em">
+    <thead><tr><th>{% for v, l in groupings %}{% if v == f.by %}{{ l }}{% endif %}{% endfor %}</th>{% for name, label in categories %}<th class="num">{{ label }}</th>{% endfor %}<th class="num">{% translate "Total" %}</th><th class="num">{% translate "OT" %}</th><th class="num">{% translate "Part" %}</th></tr></thead>
+    <tbody>
+    {% for row in rows %}
+      <tr>
+        <td>{% if row.url %}<a href="{{ row.url }}?onglet=couts">{{ row.label }}</a>{% else %}{{ row.label }}{% endif %}</td>
+        <td class="num">{{ row.labour|money }}</td><td class="num">{{ row.parts|money }}</td><td class="num">{{ row.external|money }}</td><td class="num">{{ row.other|money }}</td>
+        <td class="num fw-semibold">{{ row.total|money }}</td><td class="num">{{ row.count }}</td><td class="num">{{ row.share|number:1 }} %</td>
+      </tr>
+    {% empty %}<tr><td colspan="8" class="empty-state">{% translate "Aucun coût sur cette période." %}</td></tr>{% endfor %}
+    </tbody>
+    {% if rows %}<tfoot><tr class="fw-semibold"><td>{% translate "Total" %}</td><td class="num">{{ total.labour|money }}</td><td class="num">{{ total.parts|money }}</td><td class="num">{{ total.external|money }}</td><td class="num">{{ total.other|money }}</td><td class="num">{{ total.total|money }}</td><td class="num">{{ total.count }}</td><td class="num">100 %</td></tr></tfoot>{% endif %}
+  </table>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'vendor/chart.umd.min.js' %}"></script>
+<script src="{% static 'js/finance_charts.js' %}"></script>
+{% endblock %}

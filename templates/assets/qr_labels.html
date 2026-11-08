@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% translate "Étiquettes QR" %}{% endblock %}
+{% block content %}
+<div class="page-head no-print">
+  <div><h1>{% translate "Étiquettes QR" %}</h1><p class="sub">{% blocktranslate count n=labels|length %}{{ n }} étiquette, format A4 sur 3 colonnes.{% plural %}{{ n }} étiquettes, format A4 sur 3 colonnes.{% endblocktranslate %} {% translate "Le scan ouvre la fiche après connexion." %}</p></div>
+  <button class="btn btn-primary" type="button" data-print>{% translate "Imprimer" %}</button>
+</div>
+<div class="qr-sheet">
+  {% for label in labels %}
+    <div class="qr-label">
+      <img src="{% url 'assets:equipment_qr' label.equipment.pk %}" alt="{% translate 'QR code de' %} {{ label.equipment.code }}">
+      <div>
+        <div class="code">{{ label.equipment.code }}</div>
+        <div class="des">{{ label.equipment.designation }}</div>
+        <div class="loc">{{ label.path }}</div>
+      </div>
+    </div>
+  {% empty %}
+    <div class="card-em empty-state">{% translate "Aucun équipement à étiqueter." %}</div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends "base.html" %}{% load i18n easymaint static %}
+{% block title %}{{ point.name }}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'condition:overview' %}">{% translate "Conditionnel" %}</a> › <a href="{{ point.equipment.get_absolute_url }}?onglet=mesures">{{ point.equipment.code }}</a> › {{ point.name }}</div>
+<div class="page-head align-items-start">
+  <div class="d-flex gap-3 align-items-center">
+    {% if point.photo %}<img src="{% url 'condition:point_photo' point.pk %}" alt="{% translate 'Emplacement du point' %} {{ point.code }}" style="width:72px;height:72px;object-fit:cover;border-radius:12px;border:1px solid var(--em-border)">{% endif %}
+    <div>
+      <h1>{{ point.name }}</h1>
+      <p class="sub mb-0">{{ point.equipment }} · <span class="mono">{{ point.code }}</span>{% if point.position %} · {{ point.position }}{% endif %}{% if point.direction %} · {% translate "direction" %} {{ point.get_direction_display|lower }}{% endif %}</p>
+    </div>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    {% if user|can:"condition.record" %}<a class="btn btn-primary" href="{% url 'condition:session_create' point.equipment.pk %}">{% icon "plus" %} {% translate "Saisir des mesures" %}</a>{% endif %}
+    {% if can_manage %}<a class="btn btn-outline-secondary" href="{% url 'condition:point_update' point.pk %}">{% icon "edit" %} {% translate "Modifier le point" %}</a>{% endif %}
+  </div>
+</div>
+
+{% for block in blocks %}
+<section class="card-em mb-3" id="param-{{ block.parameter.pk }}">
+  <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-2">
+    <h2 class="mb-0">{{ block.parameter.name }}{% if block.parameter.unit %} <span class="muted fw-normal">({{ block.parameter.unit }})</span>{% endif %}</h2>
+    {% if block.last %}<span><span class="fw-bold mono fs-5">{{ block.last.value|number }} {{ block.parameter.unit }}</span> <span class="badge-em {{ block.last.level_badge }}">{{ block.last.get_level_display }}</span> <span class="muted small">{{ block.last.measured_at|date:"d/m/Y" }}</span></span>{% else %}<span class="muted">{% translate "Aucune mesure" %}</span>{% endif %}
+  </div>
+  <div class="row g-3">
+    <div class="col-xl-8">
+      {% if block.series.values %}
+        <div class="chart-sm"><canvas data-series="{{ block.chart_id }}" role="img" aria-label="{% translate 'Évolution de' %} {{ block.parameter.name }}"></canvas></div>
+        {{ block.series|json_script:block.chart_id }}
+      {% else %}
+        <div class="empty-state">{% translate "La courbe apparaîtra avec les premières mesures." %}</div>
+      {% endif %}
+    </div>
+    <div class="col-xl-4">
+      <div class="fw-semibold mb-1">{% translate "Seuils en vigueur" %}</div>
+      {% if block.current %}
+        <table class="table-em small">
+          <thead><tr><th></th><th class="num">{% translate "Haut" %}</th><th class="num">{% translate "Bas" %}</th></tr></thead>
+          <tbody>
+            <tr><td><span class="level-dot warning"></span> {% translate "Attention" %}</td><td class="num">{{ block.current.warning_high|number|default:"—" }}</td><td class="num">{{ block.current.warning_low|number|default:"—" }}</td></tr>
+            <tr><td><span class="level-dot alarm"></span> {% translate "Alarme" %}</td><td class="num">{{ block.current.alarm_high|number|default:"—" }}</td><td class="num">{{ block.current.alarm_low|number|default:"—" }}</td></tr>
+            <tr><td><span class="level-dot critical"></span> {% translate "Critique" %}</td><td class="num">{{ block.current.critical_high|number|default:"—" }}</td><td class="num">{{ block.current.critical_low|number|default:"—" }}</td></tr>
+          </tbody>
+        </table>
+        <p class="muted small mt-2 mb-0">{{ block.current.get_source_display }}{% if block.current.reference %} : {{ block.current.reference }}{% endif %} · {% translate "depuis le" %} {{ block.current.valid_from|date:"d/m/Y" }}</p>
+        {% if block.history %}<details class="small mt-2"><summary>{% translate "Versions précédentes" %}</summary>{% for t in block.history %}<div class="muted">{{ t.valid_from|date:"d/m/Y" }} : {% translate "att." %} {{ t.warning_high|default:t.warning_low|number|default:"—" }} · {% translate "alarme" %} {{ t.alarm_high|default:t.alarm_low|number|default:"—" }} · {% translate "crit." %} {{ t.critical_high|default:t.critical_low|number|default:"—" }}</div>{% endfor %}</details>{% endif %}
+      {% else %}
+        <p class="muted small">{% translate "Aucun seuil : les mesures sont enregistrées sans alerte." %}</p>
+      {% endif %}
+      {% if can_manage %}
+        <details class="mt-3"{% if not block.current %} open{% endif %}><summary class="fw-semibold">{% if block.current %}{% translate "Modifier les seuils" %}{% else %}{% translate "Définir les seuils" %}{% endif %}</summary>
+          <form class="mt-2" method="post" action="{% url 'condition:threshold_save' point.pk block.parameter.pk %}" novalidate>{% csrf_token %}
+            {% with f=block.form %}
+            <div class="row g-2">
+              <div class="col-4">{% include "partials/_field.html" with field=f.warning_high %}</div>
+              <div class="col-4">{% include "partials/_field.html" with field=f.alarm_high %}</div>
+              <div class="col-4">{% include "partials/_field.html" with field=f.critical_high %}</div>
+              {% if block.parameter.direction != "rising" %}
+              <div class="col-4">{% include "partials/_field.html" with field=f.warning_low %}</div>
+              <div class="col-4">{% include "partials/_field.html" with field=f.alarm_low %}</div>
+              <div class="col-4">{% include "partials/_field.html" with field=f.critical_low %}</div>
+              {% endif %}
+              <div class="col-6">{% include "partials/_field.html" with field=f.source %}</div>
+              <div class="col-6">{% include "partials/_field.html" with field=f.valid_from %}</div>
+              <div class="col-12">{% include "partials/_field.html" with field=f.reference %}</div>
+            </div>
+            {% endwith %}
+            <p class="muted small">{% translate "Une nouvelle version est créée : les mesures passées gardent les seuils de leur date." %}</p>
+            <button class="btn btn-sm btn-primary" type="submit">{% translate "Enregistrer les seuils" %}</button>
+          </form>
+        </details>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% empty %}
+<div class="card-em empty-state">{% translate "Aucun paramètre n'est mesuré sur ce point." %}</div>
+{% endfor %}
+
+<div class="row g-3">
+  <div class="col-xl-7">
+    <section class="card-em">
+      <h2>{% translate "Dernières mesures" %}</h2>
+      <div class="table-responsive"><table class="table-em">
+        <thead><tr><th>{% translate "Date" %}</th><th>{% translate "Paramètre" %}</th><th class="num">{% translate "Valeur" %}</th><th>{% translate "Niveau" %}</th></tr></thead>
+        <tbody>
+        {% for m in measurements %}
+          <tr><td class="mono small"><a href="{{ m.session.get_absolute_url }}">{{ m.measured_at|date:"d/m/Y H:i" }}</a></td><td>{{ m.parameter.name }}</td><td class="num">{{ m.value|number }} {{ m.parameter.unit }}</td><td><span class="badge-em {{ m.level_badge }}">{{ m.get_level_display }}</span></td></tr>
+        {% empty %}<tr><td colspan="4" class="empty-state">{% translate "Aucune mesure." %}</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+    </section>
+  </div>
+  <div class="col-xl-5">
+    <section class="card-em">
+      <h2>{% translate "Alertes" %}</h2>
+      {% for a in alerts %}
+        <div class="d-flex justify-content-between align-items-center gap-2 py-1 border-bottom"><a href="{{ a.get_absolute_url }}">{{ a.parameter.name }} · {{ a.opened_at|date:"d/m/Y" }}</a><span class="badge-em {{ a.level_badge }}">{{ a.get_level_display }} · {{ a.get_status_display|lower }}</span></div>
+      {% empty %}<p class="muted mb-0">{% translate "Aucune alerte sur ce point." %}</p>{% endfor %}
+    </section>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'vendor/chart.umd.min.js' %}"></script>
+<script src="{% static 'js/condition_charts.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Utilisateurs" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% translate "Utilisateurs" %}</h1><p class="sub">{% translate "Comptes de votre entreprise et leurs rôles." %}</p></div>
+  <a class="btn btn-primary" href="{% url 'accounts:user_create' %}">{% icon "plus" %} {% translate "Nouvel utilisateur" %}</a>
+</div>
+<form class="d-flex flex-wrap gap-2 mb-3" method="get">
+  <input class="form-control" style="max-width:320px" type="search" name="q" value="{{ request.GET.q }}" placeholder="{% translate 'Nom, identifiant, fonction…' %}" aria-label="{% translate 'Filtrer les utilisateurs' %}">
+  <select class="form-select" style="max-width:180px" name="statut" aria-label="{% translate 'Statut' %}" data-autosubmit>
+    <option value="">{% translate "Tous" %}</option>
+    <option value="actifs"{% if request.GET.statut == "actifs" %} selected{% endif %}>{% translate "Actifs" %}</option>
+    <option value="inactifs"{% if request.GET.statut == "inactifs" %} selected{% endif %}>{% translate "Désactivés" %}</option>
+  </select>
+  <button class="btn btn-outline-secondary" type="submit">{% translate "Filtrer" %}</button>
+</form>
+<div class="table-wrap">
+  <table class="table-em">
+    <thead><tr><th>{% translate "Nom" %}</th><th>{% translate "Identifiant" %}</th><th>{% translate "Rôle" %}</th><th>{% translate "Fonction" %}</th><th>{% translate "Dernière connexion" %}</th><th>{% translate "Statut" %}</th><th></th></tr></thead>
+    <tbody>
+    {% for u in users %}
+      <tr>
+        <td class="fw-semibold">{{ u }}</td>
+        <td class="mono">{{ u.username }}</td>
+        <td>{{ u.role|default:"—" }}</td>
+        <td>{{ u.job_title|default:"—" }}</td>
+        <td class="mono">{{ u.last_login|date:"d/m/Y H:i"|default:"—" }}</td>
+        <td>{% if u.is_active %}<span class="badge-em b-green">{% translate "Actif" %}</span>{% else %}<span class="badge-em b-gray">{% translate "Désactivé" %}</span>{% endif %}</td>
+        <td class="text-end text-nowrap"><a href="{% url 'accounts:user_update' u.pk %}">{% translate "Modifier" %}</a> · <a href="{% url 'accounts:user_password' u.pk %}">{% translate "Mot de passe" %}</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7" class="empty-state">{% translate "Aucun utilisateur." %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "partials/_pagination.html" %}
+{% endblock %}

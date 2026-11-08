@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Règles de déclenchement" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% translate "Maintenance conditionnelle" %}</h1><p class="sub">{% translate "Toute mesure hors seuil ouvre une alerte. Les règles décident en plus quand créer automatiquement une demande ou un OT." %}</p></div>
+  {% if user|can:"condition.manage" %}<a class="btn btn-primary" href="{% url 'condition:rule_create' %}">{% icon "plus" %} {% translate "Nouvelle règle" %}</a>{% endif %}
+</div>
+{% include "condition/_nav.html" with section="rules" %}
+<div class="table-wrap">
+  <table class="table-em">
+    <thead><tr><th>{% translate "Règle" %}</th><th>{% translate "Paramètre" %}</th><th>{% translate "Équipement" %}</th><th>{% translate "Condition" %}</th><th>{% translate "Action" %}</th><th></th></tr></thead>
+    <tbody>
+    {% for r in rules %}
+      <tr><td class="fw-semibold">{{ r.name }}{% if not r.is_active %} <span class="badge-em b-muted">{% translate "inactive" %}</span>{% endif %}</td><td>{{ r.parameter.name }}</td><td>{{ r.equipment.code|default:_("Tous") }}</td>
+        <td class="small">{% blocktranslate with level=r.get_min_level_display|lower n=r.consecutive %}≥ {{ level }}, {{ n }} mesure(s) consécutive(s){% endblocktranslate %}</td>
+        <td class="small">{{ r.get_action_display }} · P{{ r.priority }}</td>
+        <td class="text-end">{% if user|can:"condition.manage" %}<a href="{% url 'condition:rule_update' r.pk %}">{% translate "Modifier" %}</a>{% endif %}</td></tr>
+    {% empty %}<tr><td colspan="6" class="empty-state">{% translate "Aucune règle : les alertes sont créées, sans demande ni OT automatique." %}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

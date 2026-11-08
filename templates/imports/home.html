@@ -1,0 +1,34 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Imports de données" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% translate "Imports de données" %}</h1>
+  <p class="sub">{% translate "Reprise de l'existant depuis Excel : téléchargez le modèle, remplissez-le, envoyez-le. Rien n'est enregistré avant votre confirmation." %}</p></div></div>
+<p class="small muted">{% translate "Ordre conseillé : localisations (à créer à l'écran), équipements, fournisseurs, articles, historique." %}</p>
+<div class="row g-3 mb-3">
+  {% for kind, importer in cards %}
+  <div class="col-xl-6">
+    <form method="post" enctype="multipart/form-data" novalidate class="card-em h-100">{% csrf_token %}<input type="hidden" name="kind" value="{{ kind }}">
+      <div class="d-flex justify-content-between align-items-start gap-2">
+        <h2 class="mb-1">{{ forloop.counter }}. {{ importer.title }}</h2>
+        <a class="btn btn-sm btn-outline-secondary text-nowrap" href="{% url 'imports:template' kind %}">{% icon "download" 16 %} {% translate "Modèle Excel" %}</a>
+      </div>
+      <p class="small muted">{{ importer.description }} {{ importer.unique_hint }}</p>
+      {% if form.errors and request.POST.kind == kind %}<div class="alert alert-danger py-2">{% for errors in form.errors.values %}{{ errors|join:" " }} {% endfor %}</div>{% endif %}
+      <div class="row g-2 align-items-end">
+        <div class="col-md-7"><label class="form-label small" for="f-{{ kind }}">{% translate "Fichier" %}</label><input class="form-control" type="file" name="file" id="f-{{ kind }}" accept=".xlsx,.xlsm,.csv,.txt"></div>
+        <div class="col-md-5"><button class="btn btn-primary w-100" type="submit">{% translate "Lire le fichier" %}</button></div>
+      </div>
+      {% if kind != "historique" %}<div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="update_existing" id="u-{{ kind }}"><label class="form-check-label small" for="u-{{ kind }}">{% translate "Mettre à jour les fiches existantes (même code ou référence)" %}</label></div>{% endif %}
+    </form>
+  </div>
+  {% endfor %}
+</div>
+<h2 class="h5">{% translate "Historique des imports" %}</h2>
+<div class="table-wrap"><table class="table-em">
+  <thead><tr><th>{% translate "Date" %}</th><th>{% translate "Type" %}</th><th>{% translate "Fichier" %}</th><th>{% translate "Statut" %}</th><th class="num">{% translate "Créées" %}</th><th class="num">{% translate "Mises à jour" %}</th><th class="num">{% translate "Refusées" %}</th><th>{% translate "Par" %}</th></tr></thead>
+  <tbody>{% for i in imports %}<tr><td class="mono small text-nowrap">{{ i.created_at|date:"d/m/Y H:i" }}</td><td>{{ i.get_kind_display }}</td><td><a href="{{ i.get_absolute_url }}">{{ i.original_name|truncatechars:40 }}</a></td>
+    <td><span class="badge-em {% if i.status == 'done' %}b-green{% elif i.status == 'draft' %}b-blue{% else %}b-gray{% endif %}">{{ i.get_status_display }}</span></td>
+    <td class="num">{{ i.created_count }}</td><td class="num">{{ i.updated_count }}</td><td class="num">{{ i.rejected }}</td><td class="small">{{ i.created_by|default:"—" }}</td></tr>
+  {% empty %}<tr><td colspan="8" class="empty-state">{% translate "Aucun import." %}</td></tr>{% endfor %}</tbody>
+</table></div>
+{% endblock %}

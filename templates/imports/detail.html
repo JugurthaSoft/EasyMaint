@@ -1,0 +1,49 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{{ imp.original_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'imports:home' %}">{% translate "Imports de données" %}</a> › {{ imp.original_name }}</div>
+<div class="page-head">
+  <div><h1>{{ imp.get_kind_display }} · {{ imp.original_name }}</h1>
+    <p class="sub">{% translate "Envoyé le" %} {{ imp.created_at|date:"d/m/Y H:i" }}{% if imp.created_by %} {% translate "par" %} {{ imp.created_by }}{% endif %} · <span class="badge-em {% if imp.status == 'done' %}b-green{% elif imp.status == 'draft' %}b-blue{% else %}b-gray{% endif %}">{{ imp.get_status_display }}</span>{% if imp.update_existing %} · {% translate "mise à jour des fiches existantes" %}{% endif %}</p></div>
+  <a class="btn btn-outline-secondary" href="{% url 'imports:original' imp.pk %}">{% icon "download" %} {% translate "Fichier d'origine" %}</a>
+</div>
+{% if imp.status == "done" %}
+  <section class="tiles mb-3">
+    <div class="tile"><span class="lbl">{% translate "Créées" %}</span><span class="val">{{ imp.created_count }}</span></div>
+    <div class="tile"><span class="lbl">{% translate "Mises à jour" %}</span><span class="val">{{ imp.updated_count }}</span></div>
+    <div class="tile"><span class="lbl">{% translate "Ignorées" %}</span><span class="val">{{ imp.skipped }}</span></div>
+    <div class="tile"><span class="lbl">{% translate "Refusées" %}</span><span class="val{% if imp.rejected %} val-red{% endif %}">{{ imp.rejected }}</span></div>
+  </section>
+  {% if imp.errors %}<section class="card-em"><h2>{% translate "Lignes refusées" %}</h2>
+    {% for e in imp.errors %}<div class="small py-1 border-bottom"><span class="mono">{% translate "ligne" %} {{ e.line }}</span> · {{ e.label }} : {{ e.messages|join:" · " }}</div>{% endfor %}</section>{% endif %}
+{% elif imp.status == "cancelled" %}
+  <div class="alert alert-secondary">{% translate "Import abandonné : rien n'a été enregistré." %}</div>
+{% elif read_error %}
+  <div class="alert alert-danger">{{ read_error }}</div>
+{% elif analysis.missing_columns %}
+  <div class="alert alert-danger">{% translate "Colonnes obligatoires introuvables" %} : {{ analysis.missing_columns|join:", " }}. {% translate "Utilisez le modèle Excel (les titres de colonnes servent à reconnaître les données)." %}</div>
+{% else %}
+  {% if analysis.truncated %}<div class="alert alert-warning">{% translate "Le fichier dépasse la limite de lignes : seules les premières sont prises en compte." %}</div>{% endif %}
+  <section class="tiles mb-3">
+    <div class="tile"><span class="lbl">{% translate "À créer" %}</span><span class="val">{{ creates }}</span></div>
+    <div class="tile"><span class="lbl">{% translate "À mettre à jour" %}</span><span class="val">{{ updates }}</span></div>
+    <div class="tile"><span class="lbl">{% translate "Ignorées" %}</span><span class="val">{{ skips }}</span></div>
+    <div class="tile"><span class="lbl">{% translate "Refusées" %}</span><span class="val{% if error_rows %} val-red{% endif %}">{{ error_rows|length }}</span><span class="sub">{{ analysis.total }} {% translate "lignes lues" %}</span></div>
+  </section>
+  {% if error_rows %}<section class="card-em"><h2>{% translate "Lignes refusées" %}</h2>
+    {% for row in error_rows %}<div class="small py-1 border-bottom"><span class="mono">{% translate "ligne" %} {{ row.line }}</span>{% if row.label %} · {{ row.label }}{% endif %} : {{ row.messages|join:" · " }}</div>{% endfor %}</section>{% endif %}
+  <section class="card-em"><h2>{% translate "Aperçu" %}</h2>
+    <div class="table-wrap"><table class="table-em">
+      <thead><tr><th class="num">{% translate "Ligne" %}</th><th>{% translate "Fiche" %}</th><th>{% translate "Action" %}</th><th>{% translate "Remarques" %}</th></tr></thead>
+      <tbody>{% for row in preview %}<tr><td class="num muted">{{ row.line }}</td><td>{{ row.label }}</td>
+        <td>{% if row.action == "create" %}<span class="badge-em b-green">{% translate "création" %}</span>{% elif row.action == "update" %}<span class="badge-em b-blue">{% translate "mise à jour" %}</span>{% else %}<span class="badge-em b-gray">{% translate "ignorée" %}</span>{% endif %}</td>
+        <td class="small">{{ row.notes|join:" · " }}</td></tr>{% empty %}<tr><td colspan="4" class="empty-state">—</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </section>
+  <div class="form-actions">
+    <form method="post" action="{% url 'imports:cancel' imp.pk %}">{% csrf_token %}<button class="btn btn-outline-secondary" type="submit">{% translate "Abandonner" %}</button></form>
+    {% if creates or updates %}<form method="post" action="{% url 'imports:confirm' imp.pk %}">{% csrf_token %}<button class="btn btn-primary" type="submit">{% blocktranslate with n=creates|add:updates %}Importer ({{ n }} fiches){% endblocktranslate %}</button></form>{% endif %}
+  </div>
+  <p class="small muted">{% translate "Les lignes refusées ne sont pas importées : corrigez-les dans le fichier et renvoyez-le ; les fiches déjà créées seront alors ignorées." %}</p>
+{% endif %}
+{% endblock %}

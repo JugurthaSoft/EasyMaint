@@ -1,0 +1,60 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Équipements" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{% translate "Équipements" %}</h1>
+    <p class="sub">{% translate "Parc machines de l'entreprise, hors équipements réformés sauf filtre contraire." %}</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'assets:equipment_qr_labels' %}?{{ filter_query }}">{% icon "qr" %} {% translate "Étiquettes QR" %}</a>
+    <a class="btn btn-outline-secondary" href="{% url 'assets:equipment_export' %}?{{ filter_query }}">{% icon "download" %} {% translate "Exporter (Excel)" %}</a>
+    {% if user|can:"assets.manage" %}
+      <a class="btn btn-primary" href="{% url 'assets:equipment_create' %}">{% icon "plus" %} {% translate "Nouvel équipement" %}</a>
+    {% endif %}
+  </div>
+</div>
+
+<form id="equipment-filters" method="get" action="{% url 'assets:equipment_list' %}"
+      hx-get="{% url 'assets:equipment_list' %}" hx-target="#equipment-results" hx-push-url="true"
+      hx-trigger="change, input changed delay:300ms from:#filter-q, submit">
+  <div class="pills mb-3" role="group" aria-label="{% translate 'Filtrer par état' %}">
+    <label class="pill{% if not filters.statut %} active{% endif %}"><input class="visually-hidden" type="radio" name="statut" value=""{% if not filters.statut %} checked{% endif %}>{% translate "En activité" %}</label>
+    {% for value, label in statuses %}
+      <label class="pill{% if filters.statut == value %} active{% endif %}"><input class="visually-hidden" type="radio" name="statut" value="{{ value }}"{% if filters.statut == value %} checked{% endif %}>{{ label }} <span class="n">{{ status_counts|get_item:value }}</span></label>
+    {% endfor %}
+  </div>
+  <div class="row g-2 mb-3">
+    <div class="col-md-4">
+      <label class="visually-hidden" for="filter-q">{% translate "Recherche" %}</label>
+      <input class="form-control" id="filter-q" type="search" name="q" value="{{ filters.q }}" placeholder="{% translate 'Code, désignation, n° de série, modèle…' %}">
+    </div>
+    <div class="col-md-3">
+      <label class="visually-hidden" for="filter-loc">{% translate "Localisation" %}</label>
+      <select class="form-select" id="filter-loc" name="localisation">
+        <option value="">{% translate "Toutes les localisations" %}</option>
+        {% for pk, path in location_choices %}<option value="{{ pk }}"{% if filters.localisation == pk|stringformat:"s" %} selected{% endif %}>{{ path }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="visually-hidden" for="filter-family">{% translate "Famille" %}</label>
+      <select class="form-select" id="filter-family" name="famille">
+        <option value="">{% translate "Toutes les familles" %}</option>
+        {% for family in families %}<option value="{{ family.pk }}"{% if filters.famille == family.pk|stringformat:"s" %} selected{% endif %}>{{ family }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="visually-hidden" for="filter-crit">{% translate "Criticité" %}</label>
+      <select class="form-select" id="filter-crit" name="criticite">
+        <option value="">{% translate "Toute criticité" %}</option>
+        {% for value, label in criticalities %}<option value="{{ value }}"{% if filters.criticite == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+  </div>
+  <noscript><button class="btn btn-outline-secondary mb-3" type="submit">{% translate "Filtrer" %}</button></noscript>
+</form>
+
+<div id="equipment-results">
+  {% include "assets/_equipment_results.html" %}
+</div>
+{% endblock %}

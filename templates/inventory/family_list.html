@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Familles d'articles" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% translate "Magasin" %}</h1></div>{% if user|can:"inventory.manage" %}<a class="btn btn-primary" href="{% url 'inventory:family_create' %}">{% icon "plus" %} {% translate "Nouvelle famille" %}</a>{% endif %}</div>
+{% include "inventory/_nav.html" with section="families" %}
+<div class="table-wrap" style="max-width:720px"><table class="table-em">
+  <thead><tr><th>{% translate "Code" %}</th><th>{% translate "Famille" %}</th><th class="num">{% translate "Articles" %}</th></tr></thead>
+  <tbody>{% for f in families %}<tr><td class="mono">{% if user|can:"inventory.manage" %}<a href="{% url 'inventory:family_update' f.pk %}">{{ f.code }}</a>{% else %}{{ f.code }}{% endif %}</td><td><a href="{% url 'inventory:item_list' %}?famille={{ f.pk }}">{{ f.name }}</a></td><td class="num">{{ f.item_count }}</td></tr>
+  {% empty %}<tr><td colspan="3" class="empty-state">{% translate "Aucune famille." %}</td></tr>{% endfor %}</tbody>
+</table></div>
+{% endblock %}

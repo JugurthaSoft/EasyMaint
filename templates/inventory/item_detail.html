@@ -1,0 +1,115 @@
+{% extends "base.html" %}{% load i18n easymaint static %}
+{% block title %}{{ item.reference }}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'inventory:item_list' %}">{% translate "Magasin" %}</a> › {{ item.reference }}</div>
+<div class="page-head">
+  <div>
+    <h1>{{ item.reference }} · {{ item.designation }}</h1>
+    <p class="sub">{{ item.family|default:"" }}{% if item.brand %} · {{ item.brand }}{% endif %}{% if item.manufacturer_reference %} · {% translate "réf. constructeur" %} <span class="mono">{{ item.manufacturer_reference }}</span>{% endif %}
+      {% if item.is_critical %} <span class="badge-em b-red">{% translate "pièce critique" %}</span>{% endif %}{% if not item.is_active %} <span class="badge-em b-gray">{% translate "désactivé" %}</span>{% endif %}</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    {% include "inventory/_movement_buttons.html" %}
+    {% if user|can:"inventory.manage" %}<a class="btn btn-outline-secondary" href="{% url 'inventory:item_update' item.pk %}">{% icon "edit" %} {% translate "Modifier" %}</a>{% endif %}
+  </div>
+</div>
+
+<section class="tiles mb-3">
+  <div class="tile"><span class="lbl">{% translate "Stock physique" %}</span><span class="val">{{ item.physical|number }}</span><span class="sub">{{ item.get_unit_display }}</span></div>
+  <div class="tile"><span class="lbl">{% translate "Réservé pour des OT" %}</span><span class="val">{{ item.reserved|number }}</span><span class="sub">{% translate "non encore délivré" %}</span></div>
+  <div class="tile"><span class="lbl">{% translate "Disponible" %}</span><span class="val{% if item.below_min %} val-red{% endif %}">{{ item.available|number }}</span><span class="sub">{% translate "mini" %} {{ item.min_stock|number }}{% if item.max_stock is not None %} · {% translate "maxi" %} {{ item.max_stock|number }}{% endif %}</span></div>
+  <div class="tile"><span class="lbl">{% translate "Coût moyen pondéré" %}</span><span class="val">{{ item.average_cost|money }}</span><span class="sub">{% translate "valeur" %} {{ item.stock_value|money }}</span></div>
+</section>
+
+<div class="row g-3">
+  <div class="col-xl-8">
+    <section class="card-em">
+      <h2>{% translate "Stock par magasin" %}</h2>
+      <div class="table-responsive"><table class="table-em">
+        <thead><tr><th>{% translate "Magasin" %}</th><th>{% translate "Emplacement" %}</th><th class="num">{% translate "Physique" %}</th><th class="num">{% translate "Réservé" %}</th><th class="num">{% translate "Disponible" %}</th></tr></thead>
+        <tbody>{% for level in levels %}<tr><td>{{ level.warehouse }}</td><td class="mono small">{{ level.bin_location|default:"—" }}</td><td class="num">{{ level.quantity|number }}</td><td class="num">{{ level.reserved|number }}</td><td class="num">{{ level.available|number }}</td></tr>
+        {% empty %}<tr><td colspan="5" class="empty-state">{% translate "Jamais entré en stock." %}</td></tr>{% endfor %}</tbody>
+      </table></div>
+      {% if user|can:"stock.move" or user|can:"inventory.manage" %}
+        <form class="row g-2 mt-2 align-items-end" method="post" action="{% url 'inventory:item_bin' item.pk %}" novalidate>{% csrf_token %}
+          <div class="col-md-5"><label class="form-label small" for="bin-wh">{% translate "Magasin" %}</label>{{ bin_form.warehouse|bs }}</div>
+          <div class="col-md-5"><label class="form-label small" for="bin-loc">{% translate "Emplacement" %}</label><input class="form-control" id="bin-loc" name="bin_location" maxlength="60" placeholder="{% translate 'Allée B, rayon 3, casier 12' %}"></div>
+          <div class="col-md-2"><button class="btn btn-outline-secondary w-100" type="submit">{% translate "Enregistrer" %}</button></div>
+        </form>
+      {% endif %}
+    </section>
+
+    {% if requests %}
+    <section class="card-em">
+      <h2>{% translate "Réservations en cours" %}</h2>
+      {% for r in requests %}<div class="d-flex justify-content-between py-1 border-bottom"><span>{% include "inventory/_wo_ref.html" with order=r.work_order %} · {{ r.work_order.title|truncatechars:50 }} <span class="muted small">({{ r.warehouse.code }})</span></span><span class="mono">{{ r.remaining|number }}</span></div>{% endfor %}
+    </section>
+    {% endif %}
+
+    <section class="card-em">
+      <div class="d-flex justify-content-between align-items-center mb-2"><h2 class="mb-0">{% translate "Derniers mouvements" %}</h2><a class="small" href="{% url 'inventory:movement_list' %}?article={{ item.pk }}">{% translate "Tous les mouvements" %}</a></div>
+      <div class="table-responsive"><table class="table-em">
+        <thead><tr><th>{% translate "Date" %}</th><th>{% translate "Type" %}</th><th>{% translate "Magasin" %}</th><th class="num">{% translate "Qté" %}</th><th class="num">{% translate "Coût unit." %}</th><th class="num">{% translate "Stock après" %}</th><th>{% translate "Référence" %}</th></tr></thead>
+        <tbody>{% for m in movements %}<tr><td class="mono text-nowrap small">{{ m.moved_at|date:"d/m/Y H:i" }}</td><td>{{ m.get_kind_display }}</td><td class="mono small">{{ m.warehouse.code }}</td>
+          <td class="num {% if m.quantity > 0 %}text-success{% else %}text-danger{% endif %}">{% if m.quantity > 0 %}+{% endif %}{{ m.quantity|number }}</td><td class="num">{{ m.unit_cost|money }}</td><td class="num">{{ m.stock_after|number }}</td>
+          <td class="small">{% if m.work_order %}{% include "inventory/_wo_ref.html" with order=m.work_order %}{% else %}{{ m.document|default:m.reason|truncatechars:40 }}{% endif %}</td></tr>
+        {% empty %}<tr><td colspan="7" class="empty-state">{% translate "Aucun mouvement." %}</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </section>
+  </div>
+
+  <div class="col-xl-4">
+    {% if item.photo %}<section class="card-em"><img src="{% url 'inventory:item_photo' item.pk %}" alt="{{ item.designation }}" class="img-fluid rounded-3"></section>{% endif %}
+    <section class="card-em">
+      <h2>{% translate "Fiche" %}</h2>
+      <div class="kv">
+        <div><div class="k">{% translate "Unité" %}</div><div class="v">{{ item.get_unit_display }}</div></div>
+        <div><div class="k">{% translate "Fabricant" %}</div><div class="v">{{ item.manufacturer|default:"—" }}</div></div>
+        <div><div class="k">{% translate "Prix de référence" %}</div><div class="v mono">{{ item.unit_price|money }}</div></div>
+        <div><div class="k">{% translate "Délai d'approvisionnement" %}</div><div class="v">{% if item.lead_time_days %}{{ item.lead_time_days }} {% translate "jours" %}{% else %}—{% endif %}</div></div>
+        {% if item.datasheet %}<div><div class="k">{% translate "Fiche technique" %}</div><div class="v"><a href="{% url 'inventory:item_datasheet' item.pk %}">{% icon "file" 16 %} {% translate "Télécharger" %}</a></div></div>{% endif %}
+      </div>
+      {% if item.notes %}<p class="small mt-2 mb-0">{{ item.notes|linebreaksbr }}</p>{% endif %}
+    </section>
+
+    <section class="card-em">
+      <h2>{% translate "Fournisseurs" %}</h2>
+      {% for s in suppliers %}
+        <div class="d-flex justify-content-between align-items-start py-1 border-bottom">
+          <div><a href="{{ s.supplier.get_absolute_url }}">{{ s.supplier }}</a>{% if s.is_preferred %} <span class="badge-em b-green">{% translate "principal" %}</span>{% endif %}
+            <div class="small muted">{% if s.supplier_reference %}<span class="mono">{{ s.supplier_reference }}</span> · {% endif %}{% if s.price is not None %}{{ s.price|money }}{% endif %}{% if s.lead_time_days %} · {{ s.lead_time_days }} j{% endif %}</div></div>
+          {% if user|can:"inventory.manage" %}<form method="post" action="{% url 'inventory:item_supplier_delete' item.pk s.pk %}">{% csrf_token %}<button class="btn btn-sm btn-link text-danger p-0" type="submit">{% translate "Retirer" %}</button></form>{% endif %}
+        </div>
+      {% empty %}<p class="muted">{% translate "Aucun fournisseur associé." %}</p>{% endfor %}
+      {% if user|can:"inventory.manage" %}
+        <details class="mt-2"><summary class="small">{% translate "Ajouter un fournisseur" %}</summary>
+          <form method="post" action="{% url 'inventory:item_supplier_add' item.pk %}" class="mt-2" novalidate>{% csrf_token %}{% include "partials/_form.html" with form=supplier_form %}<button class="btn btn-sm btn-outline-primary" type="submit">{% translate "Ajouter" %}</button></form>
+        </details>
+      {% endif %}
+    </section>
+
+    <section class="card-em">
+      <h2>{% translate "Historique des prix d'achat" %}</h2>
+      {% if prices|length > 1 %}<div class="chart-box mb-2" style="height:180px"><canvas data-prices="price-series" aria-label="{% translate "Évolution du prix d'achat" %}"></canvas></div>{{ price_series|json_script:"price-series" }}{% endif %}
+      {% for m in prices %}<div class="d-flex justify-content-between py-1 border-bottom small"><span><span class="mono">{{ m.moved_at|date:"d/m/Y" }}</span> · {{ m.supplier|default:"—" }}{% if m.purchase_order %} · <span class="mono">{% translate "BC" %} {{ m.purchase_order }}</span>{% endif %}</span><span class="mono">{{ m.unit_cost|money }}</span></div>
+      {% empty %}<p class="muted mb-0">{% translate "Aucune entrée enregistrée." %}</p>{% endfor %}
+    </section>
+
+    <section class="card-em">
+      <h2>{% translate "Monté sur" %}</h2>
+      {% for link in used_on %}<div class="py-1 border-bottom small"><a href="{{ link.equipment.get_absolute_url }}?onglet=pieces">{{ link.equipment.code }}</a> · {{ link.equipment.designation }} <span class="mono muted">× {{ link.quantity|number }}</span></div>
+      {% empty %}<p class="muted mb-0">{% translate "Dans aucune nomenclature d'équipement." %}</p>{% endfor %}
+    </section>
+
+    <section class="card-em">
+      <h2>{% translate "Consommations" %}</h2>
+      {% for m in consumption %}<div class="d-flex justify-content-between py-1 border-bottom small"><span><span class="mono">{{ m.moved_at|date:"d/m/Y" }}</span> · {% if m.work_order %}{% include "inventory/_wo_ref.html" with order=m.work_order %}{% elif m.equipment %}{{ m.equipment.code }}{% else %}{{ m.reason|truncatechars:30 }}{% endif %}</span><span class="mono">{{ m.quantity|number }}</span></div>
+      {% empty %}<p class="muted mb-0">{% translate "Aucune consommation." %}</p>{% endfor %}
+    </section>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}{% if prices|length > 1 %}
+<script src="{% static 'vendor/chart.umd.min.js' %}"></script>
+<script src="{% static 'js/inventory_charts.js' %}"></script>{% endif %}
+{% endblock %}

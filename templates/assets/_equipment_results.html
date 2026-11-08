@@ -1,0 +1,25 @@
+{% load i18n easymaint %}
+<p class="muted small mb-2" aria-live="polite">{% blocktranslate count n=paginator.count %}{{ n }} équipement{% plural %}{{ n }} équipements{% endblocktranslate %}</p>
+<div class="table-wrap">
+  <table class="table-em">
+    <thead>
+      <tr><th>{% translate "Code" %}</th><th>{% translate "Désignation" %}</th><th>{% translate "Localisation" %}</th><th>{% translate "Famille" %}</th><th>{% translate "Crit." %}</th><th>{% translate "État" %}</th><th>{% translate "Fabricant · modèle" %}</th></tr>
+    </thead>
+    <tbody>
+    {% for item in equipment_list %}
+      <tr>
+        <td class="text-nowrap"><a class="fw-semibold" href="{{ item.get_absolute_url }}">{{ item.code }}</a></td>
+        <td>{{ item.designation }}</td>
+        <td class="small">{{ paths|get_item:item.location_id }}</td>
+        <td class="small">{{ item.family }}</td>
+        <td><span class="crit crit-{{ item.criticality }}" title="{{ item.get_criticality_display }}">{{ item.criticality }}</span></td>
+        <td><span class="badge-em {{ item.status_badge }}">{{ item.get_status_display }}</span></td>
+        <td class="small">{% if item.manufacturer %}{{ item.manufacturer.name }}{% endif %}{% if item.model %} · {{ item.model }}{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7" class="empty-state">{% translate "Aucun équipement ne correspond à ces filtres." %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "partials/_pagination.html" with extra_query=filter_query hx_target="equipment-results" %}

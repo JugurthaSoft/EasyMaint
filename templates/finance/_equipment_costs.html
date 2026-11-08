@@ -1,0 +1,25 @@
+{% load i18n easymaint %}
+<div class="row g-3">
+  <div class="col-xl-7">
+    <section class="card-em">
+      <div class="d-flex justify-content-between align-items-center mb-2"><h2 class="mb-0">{% translate "Historique financier" %}</h2>
+        <a class="small" href="{% url 'finance:costs' %}?equipement_id={{ equipment.pk }}&regroupement=mois&du={{ equipment.created_at|date:'Y' }}-01-01">{% translate "Analyse détaillée" %}</a></div>
+      <div class="table-responsive"><table class="table-em">
+        <thead><tr><th>{% translate "Année" %}</th>{% for name, label in categories %}<th class="num">{{ label }}</th>{% endfor %}<th class="num">{% translate "Total" %}</th><th class="num">{% translate "OT" %}</th></tr></thead>
+        <tbody>{% for year, v in cost_history.years %}<tr><td class="fw-semibold">{{ year }}</td><td class="num">{{ v.labour|money }}</td><td class="num">{{ v.parts|money }}</td><td class="num">{{ v.external|money }}</td><td class="num">{{ v.other|money }}</td><td class="num fw-semibold">{{ v.total|money }}</td><td class="num">{{ v.count }}</td></tr>
+        {% empty %}<tr><td colspan="7" class="empty-state">{% translate "Aucun coût enregistré pour cet équipement." %}</td></tr>{% endfor %}</tbody>
+        {% if cost_history.years %}<tfoot><tr class="fw-semibold"><td>{% translate "Cumul" %}</td><td class="num">{{ cost_history.total.labour|money }}</td><td class="num">{{ cost_history.total.parts|money }}</td><td class="num">{{ cost_history.total.external|money }}</td><td class="num">{{ cost_history.total.other|money }}</td><td class="num">{{ cost_history.total.total|money }}</td><td class="num">{{ cost_history.total.count }}</td></tr></tfoot>{% endif %}
+      </table></div>
+    </section>
+  </div>
+  <div class="col-xl-5">
+    <section class="card-em"><h2>{% translate "Par type de maintenance" %}</h2>
+      {% for row in cost_history.by_kind %}<div class="d-flex justify-content-between py-1 border-bottom"><span>{{ row.label }}</span><span class="mono">{{ row.total|money }} <span class="muted small">({{ row.share|number:0 }} %)</span></span></div>
+      {% empty %}<p class="muted mb-0">—</p>{% endfor %}
+    </section>
+    <section class="card-em"><h2>{% translate "OT les plus coûteux" %}</h2>
+      {% for r in cost_history.top %}<div class="d-flex justify-content-between py-1 border-bottom small"><span><a href="{{ r.url }}">{{ r.reference }}</a> · <span class="mono">{{ r.day|date:"d/m/Y" }}</span></span><span class="mono">{{ r.total|money }}</span></div>
+      {% empty %}<p class="muted mb-0">{% translate "Aucun OT validé." %}</p>{% endfor %}
+    </section>
+  </div>
+</div>

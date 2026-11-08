@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Rôles et droits" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% translate "Rôles et droits" %}</h1><p class="sub">{% translate "Chaque rôle est une liste de droits. Les rôles prédéfinis peuvent être ajustés." %}</p></div>
+  <a class="btn btn-primary" href="{% url 'accounts:role_create' %}">{% icon "plus" %} {% translate "Nouveau rôle" %}</a>
+</div>
+<div class="table-wrap">
+  <table class="table-em">
+    <thead><tr><th>{% translate "Rôle" %}</th><th class="num">{% translate "Droits" %}</th><th class="num">{% translate "Utilisateurs" %}</th><th>{% translate "Type" %}</th><th></th></tr></thead>
+    <tbody>
+    {% for role in roles %}
+      <tr>
+        <td class="fw-semibold">{{ role.name }}</td>
+        <td class="num">{{ role.capabilities|length }}</td>
+        <td class="num">{{ role.user_count }}</td>
+        <td>{% if role.is_system %}<span class="badge-em b-gray">{% translate "Prédéfini" %}</span>{% else %}<span class="badge-em b-blue">{% translate "Personnalisé" %}</span>{% endif %}</td>
+        <td class="text-end"><a href="{% url 'accounts:role_update' role.pk %}">{% translate "Modifier les droits" %}</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

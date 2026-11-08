@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Compétences et sous-traitants" %}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'workforce:technician_list' %}">{% translate "Techniciens et équipes" %}</a> › {% translate "Compétences et sous-traitants" %}</div>
+<div class="page-head"><div><h1>{% translate "Compétences et sous-traitants" %}</h1></div></div>
+<div class="row g-3">
+  <div class="col-xl-5">
+    <section class="card-em">
+      <div class="d-flex justify-content-between align-items-center mb-3"><h2 class="mb-0">{% translate "Compétences" %}</h2>{% if user|can:"workforce.manage" %}<a class="btn btn-sm btn-primary" href="{% url 'workforce:skill_create' %}">{% icon "plus" 16 %} {% translate "Compétence" %}</a>{% endif %}</div>
+      <table class="table-em"><thead><tr><th>{% translate "Code" %}</th><th>{% translate "Compétence" %}</th><th class="num">{% translate "Techniciens" %}</th><th></th></tr></thead><tbody>
+      {% for skill in skills %}<tr><td class="mono">{{ skill.code }}</td><td>{{ skill.name }}</td><td class="num">{{ skill.n }}</td><td class="text-end">{% if user|can:"workforce.manage" %}<a href="{% url 'workforce:skill_update' skill.pk %}">{% translate "Modifier" %}</a>{% endif %}</td></tr>
+      {% empty %}<tr><td colspan="4" class="empty-state">{% translate "Aucune compétence." %}</td></tr>{% endfor %}
+      </tbody></table>
+    </section>
+  </div>
+  <div class="col-xl-7">
+    <section class="card-em">
+      <div class="d-flex justify-content-between align-items-center mb-3"><h2 class="mb-0">{% translate "Sous-traitants" %}</h2>{% if user|can:"workforce.manage" %}<a class="btn btn-sm btn-primary" href="{% url 'workforce:contractor_create' %}">{% icon "plus" 16 %} {% translate "Sous-traitant" %}</a>{% endif %}</div>
+      <table class="table-em"><thead><tr><th>{% translate "Raison sociale" %}</th><th>{% translate "Spécialités" %}</th><th>{% translate "Contact" %}</th><th></th></tr></thead><tbody>
+      {% for c in contractors %}<tr><td class="fw-semibold">{{ c.name }}{% if not c.is_active %} <span class="badge-em b-muted">{% translate "inactif" %}</span>{% endif %}</td><td class="small">{{ c.specialties|default:"—" }}</td><td class="small">{{ c.contact_name }}{% if c.phone %} · {{ c.phone }}{% endif %}</td><td class="text-end">{% if user|can:"workforce.manage" %}<a href="{% url 'workforce:contractor_update' c.pk %}">{% translate "Modifier" %}</a>{% endif %}</td></tr>
+      {% empty %}<tr><td colspan="4" class="empty-state">{% translate "Aucun sous-traitant." %}</td></tr>{% endfor %}
+      </tbody></table>
+    </section>
+  </div>
+</div>
+{% endblock %}

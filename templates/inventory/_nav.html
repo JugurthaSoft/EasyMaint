@@ -1,0 +1,10 @@
+{% load i18n easymaint %}<nav class="tabs-em" aria-label="{% translate 'Magasin' %}">
+  <a href="{% url 'inventory:item_list' %}" class="{% if section == 'items' %}active{% endif %}">{% translate "Articles" %}</a>
+  <a href="{% url 'inventory:request_queue' %}" class="{% if section == 'requests' %}active{% endif %}">{% translate "Pièces à délivrer" %}</a>
+  <a href="{% url 'inventory:purchase_list' %}" class="{% if section == 'purchases' %}active{% endif %}">{% translate "Demandes d'achat" %}</a>
+  <a href="{% url 'inventory:movement_list' %}" class="{% if section == 'movements' %}active{% endif %}">{% translate "Mouvements" %}</a>
+  <a href="{% url 'inventory:count_list' %}" class="{% if section == 'counts' %}active{% endif %}">{% translate "Inventaires" %}</a>
+  <a href="{% url 'inventory:supplier_list' %}" class="{% if section == 'suppliers' %}active{% endif %}">{% translate "Fournisseurs" %}</a>
+  <a href="{% url 'inventory:warehouse_list' %}" class="{% if section == 'warehouses' %}active{% endif %}">{% translate "Magasins" %}</a>
+  <a href="{% url 'inventory:family_list' %}" class="{% if section == 'families' %}active{% endif %}">{% translate "Familles" %}</a>
+</nav>

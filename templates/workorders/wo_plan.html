@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% translate "Planifier" %} {{ wo.number }}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'workorders:wo_list' %}">{% translate "Ordres de travail" %}</a> › <a href="{{ wo.get_absolute_url }}">{{ wo.number }}</a> › {% translate "Planifier" %}</div>
+<div class="page-head"><div><h1>{% translate "Planifier" %} {{ wo.number }}</h1><p class="sub">{{ wo.equipment }}</p></div></div>
+<form method="post" novalidate>{% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+  <div class="row g-3">
+    <div class="col-xl-7"><section class="card-em">
+      {% include "partials/_field.html" with field=form.title %}
+      {% include "partials/_field.html" with field=form.description %}
+      <div class="row"><div class="col-sm-6">{% include "partials/_field.html" with field=form.kind %}</div><div class="col-sm-6">{% include "partials/_field.html" with field=form.priority %}</div></div>
+      <div class="row"><div class="col-sm-4">{% include "partials/_field.html" with field=form.planned_date %}</div><div class="col-sm-4">{% include "partials/_field.html" with field=form.due_date %}</div><div class="col-sm-4">{% include "partials/_field.html" with field=form.estimated_hours %}</div></div>
+    </section></div>
+    <div class="col-xl-5"><section class="card-em">
+      <div class="form-section">{% translate "Intervenants" %}</div>
+      {% include "partials/_field.html" with field=form.team %}
+      {% include "partials/_field.html" with field=form.technicians %}
+      {% include "partials/_field.html" with field=form.contractor %}
+      <p class="muted small mb-0">{% translate "Dès qu'un intervenant est désigné, l'OT passe à « Affecté »." %}</p>
+    </section></div>
+  </div>
+  <div class="form-actions mt-3">
+    <a class="btn btn-outline-secondary" href="{{ wo.get_absolute_url }}">{% translate "Annuler" %}</a>
+    <button class="btn btn-primary" type="submit">{% translate "Enregistrer" %}</button>
+  </div>
+</form>
+{% endblock %}

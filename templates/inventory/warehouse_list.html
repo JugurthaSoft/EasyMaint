@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Magasins" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% translate "Magasin" %}</h1></div>{% if user|can:"inventory.manage" %}<a class="btn btn-primary" href="{% url 'inventory:warehouse_create' %}">{% icon "plus" %} {% translate "Nouveau magasin" %}</a>{% endif %}</div>
+{% include "inventory/_nav.html" with section="warehouses" %}
+<div class="table-wrap"><table class="table-em">
+  <thead><tr><th>{% translate "Code" %}</th><th>{% translate "Nom" %}</th><th>{% translate "Localisation" %}</th><th class="num">{% translate "Articles en stock" %}</th><th class="num">{% translate "Valeur" %}</th><th>{% translate "État" %}</th></tr></thead>
+  <tbody>{% for w in warehouses %}<tr><td class="mono">{% if user|can:"inventory.manage" %}<a href="{% url 'inventory:warehouse_update' w.pk %}">{{ w.code }}</a>{% else %}{{ w.code }}{% endif %}</td><td>{{ w.name }}</td><td>{{ w.location|default:"—" }}</td><td class="num">{{ w.item_count }}</td><td class="num">{{ w.value|money }}</td>
+    <td>{% if w.is_active %}<span class="badge-em b-green">{% translate "actif" %}</span>{% else %}<span class="badge-em b-gray">{% translate "désactivé" %}</span>{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="6" class="empty-state">{% translate "Aucun magasin : créez-en un pour commencer à gérer le stock." %}</td></tr>{% endfor %}</tbody>
+</table></div>
+{% endblock %}

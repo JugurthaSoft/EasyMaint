@@ -1,0 +1,12 @@
+{% load i18n %}<div id="chk-{{ item.pk }}">
+  {% if editable %}
+    <form method="post" action="{% url 'workorders:wo_checklist_toggle' wo.pk item.pk %}" hx-post="{% url 'workorders:wo_checklist_toggle' wo.pk item.pk %}" hx-target="#chk-{{ item.pk }}" hx-swap="outerHTML">{% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      <button type="submit" class="chk-row{% if item.is_done %} done{% endif %}" aria-pressed="{% if item.is_done %}true{% else %}false{% endif %}">
+        <span class="chk-box" aria-hidden="true">{% if item.is_done %}✓{% endif %}</span><span>{{ item.label }}</span>
+      </button>
+    </form>
+  {% else %}
+    <div class="chk-row{% if item.is_done %} done{% endif %}"><span class="chk-box" aria-hidden="true">{% if item.is_done %}✓{% endif %}</span><span>{{ item.label }}</span><span class="visually-hidden">{% if item.is_done %}{% translate "fait" %}{% else %}{% translate "à faire" %}{% endif %}</span></div>
+  {% endif %}
+</div>

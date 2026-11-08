@@ -1,0 +1,45 @@
+{% extends "base.html" %}{% load i18n easymaint inventory_tags %}
+{% block title %}{{ count.number }}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'inventory:count_list' %}">{% translate "Inventaires" %}</a> › {{ count.number }}</div>
+<div class="page-head">
+  <div><h1>{% translate "Inventaire" %} {{ count.number }}</h1>
+    <p class="sub">{{ count.warehouse }}{% if count.family %} · {{ count.family }}{% endif %} · {% translate "ouvert le" %} {{ count.started_at|date:"d/m/Y H:i" }}
+      · <span class="badge-em {% if count.status == 'open' %}b-blue{% elif count.status == 'validated' %}b-green{% else %}b-gray{% endif %}">{{ count.get_status_display }}</span>
+      {% if count.validated_at %} · {% translate "validé le" %} {{ count.validated_at|date:"d/m/Y H:i" }} {% translate "par" %} {{ count.validated_by }}{% endif %}</p></div>
+  <a class="btn btn-outline-secondary" href="{% url 'inventory:count_export' count.pk %}">{% icon "download" %} {% translate "Feuille de comptage (Excel)" %}</a>
+</div>
+<p class="muted">{% blocktranslate with c=counted t=lines|length d=differences %}{{ c }} article(s) compté(s) sur {{ t }} · {{ d }} écart(s).{% endblocktranslate %}</p>
+<form method="post" novalidate>{% csrf_token %}
+  <div class="table-wrap"><table class="table-em">
+    <thead><tr><th>{% translate "Référence" %}</th><th>{% translate "Désignation" %}</th><th class="num">{% translate "Théorique" %}</th><th class="num" style="width:160px">{% translate "Compté" %}</th><th class="num">{% translate "Écart" %}</th></tr></thead>
+    <tbody>
+    {% for line in lines %}
+      <tr>
+        <td class="mono"><a href="{{ line.item.get_absolute_url }}">{{ line.item.reference }}</a></td>
+        <td>{{ line.item.designation }} <span class="muted small">{{ line.item.get_unit_display }}</span></td>
+        <td class="num">{{ line.expected|number }}</td>
+        <td class="num">{% if can_count %}<input class="form-control form-control-sm text-end" name="c-{{ line.pk }}" inputmode="decimal" value="{% if line.counted is not None %}{{ line.counted|stringformat:'s' }}{% endif %}" aria-label="{% translate 'Quantité comptée' %} {{ line.item.reference }}">{% elif line.counted is not None %}{{ line.counted|number }}{% else %}—{% endif %}</td>
+        <td class="num">{% with d=line.difference %}{% if d is None %}—{% elif d == 0 %}<span class="muted">0</span>{% else %}<span class="{% if d < 0 %}text-danger{% else %}text-success{% endif %} fw-semibold">{% if d > 0 %}+{% endif %}{{ d|number }}</span>{% endif %}{% endwith %}</td>
+      </tr>
+    {% empty %}<tr><td colspan="5" class="empty-state">{% translate "Aucun article dans ce périmètre." %}</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+  {% if can_count %}
+  <div class="form-actions">
+    <button class="btn btn-outline-primary" type="submit">{% translate "Enregistrer les quantités" %}</button>
+    <button class="btn btn-primary" type="submit" name="then" value="validate">{% translate "Enregistrer et valider l'inventaire" %}</button>
+  </div>
+  {% endif %}
+</form>
+{% if can_count %}
+  {% items_datalist %}
+  <div class="d-flex flex-wrap gap-3 justify-content-between align-items-end mt-3">
+    <form class="d-flex gap-2 align-items-end" method="post" action="{% url 'inventory:count_add_line' count.pk %}">{% csrf_token %}
+      <div><label class="form-label small" for="cl-item">{% translate "Article trouvé hors liste" %}</label><input class="form-control" id="cl-item" name="item" list="items-datalist" autocomplete="off" maxlength="40" placeholder="{% translate 'Référence' %}"></div>
+      <button class="btn btn-outline-secondary" type="submit">{% translate "Ajouter" %}</button>
+    </form>
+    <form method="post" action="{% url 'inventory:count_cancel' count.pk %}">{% csrf_token %}<button class="btn btn-link text-danger" type="submit">{% translate "Annuler l'inventaire" %}</button></form>
+  </div>
+{% endif %}
+{% endblock %}

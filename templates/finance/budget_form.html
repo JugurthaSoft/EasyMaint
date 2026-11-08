@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Budget" %} {{ year }} · {{ unit.name }}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'finance:budget' %}?annee={{ year }}">{% translate "Budget" %} {{ year }}</a> › {{ unit.name }}</div>
+<div class="page-head"><div><h1>{% translate "Budget" %} {{ year }} · {{ unit.name }}</h1><p class="sub">{% translate "Saisissez le montant annuel et cochez « Répartir à parts égales », ou ajustez chaque mois." %}</p></div></div>
+<form method="post" novalidate class="card-em" style="max-width:860px">{% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+  <div class="row align-items-end">
+    <div class="col-md-5">{% include "partials/_field.html" with field=form.annual %}</div>
+    <div class="col-md-7">{% include "partials/_field.html" with field=form.split %}</div>
+  </div>
+  <div class="row">{% for field in month_fields %}<div class="col-6 col-md-3">{% include "partials/_field.html" with field=field %}</div>{% endfor %}</div>
+  {% include "partials/_field.html" with field=form.notes %}
+  <div class="form-actions">
+    <a class="btn btn-outline-secondary" href="{% url 'finance:budget' %}?annee={{ year }}">{% translate "Annuler" %}</a>
+    <button class="btn btn-primary" type="submit">{% translate "Enregistrer" %}</button>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,5 @@
+{% load i18n %}<nav class="tabs-em" aria-label="{% translate 'Indicateurs' %}">
+  <a href="{% url 'kpi:indicators' %}" class="{% if section == 'kpi' %}active{% endif %}">{% translate "Indicateurs" %}</a>
+  <a href="{% url 'kpi:reports' %}" class="{% if section == 'reports' %}active{% endif %}">{% translate "Rapports mensuels" %}</a>
+  <a href="{% url 'kpi:definitions' %}" class="{% if section == 'definitions' %}active{% endif %}">{% translate "Définitions" %}</a>
+</nav>

@@ -1,0 +1,7 @@
+{% load i18n %}<section class="card-em h-100">
+  <h2>{% translate "Équipements par unité et par état" %}</h2>
+  {% if by_workshop.labels %}
+    <div class="chart-box"><canvas data-dash="workshops" role="img" aria-label="{% translate 'Nombre d’équipements par unité, répartis entre en service, arrêtés et en panne' %}"></canvas></div>
+    {{ by_workshop|json_script:"dash-workshops" }}
+  {% else %}<div class="empty-state">{% translate "Aucun équipement enregistré pour l'instant." %}</div>{% endif %}
+</section>

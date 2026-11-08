@@ -1,0 +1,95 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{{ wo.number }}{% endblock %}
+{% block content %}
+{% with here=request.get_full_path %}
+<div class="execute-wrap">
+  <div class="d-flex align-items-center gap-2">
+    <a class="btn btn-outline-secondary btn-icon" href="{% url 'workorders:my_work_orders' %}" aria-label="{% translate 'Retour à mes OT' %}"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>
+    <div class="flex-grow-1"><div class="fw-bold mono fs-5">{{ wo.number }}</div><div class="muted small">{% if technician %}{{ technician }}{% else %}{{ user }}{% endif %}</div></div>
+    <span class="badge-em {{ wo.status_badge }}">{{ wo.get_status_display }}</span>
+  </div>
+
+  <section class="card-em">
+    <div class="d-flex flex-wrap gap-2 mb-2"><span class="badge-em {{ wo.kind_badge }}">{{ wo.get_kind_display }} · P{{ wo.priority }}</span>{% if wo.production_stopped %}<span class="badge-em b-orange">{% translate "Arrêt de production" %}</span>{% endif %}{% if wo.is_late %}<span class="badge-em b-red">{% translate "En retard" %}</span>{% endif %}</div>
+    <h1 class="h5 fw-bold mb-2">{{ wo.title }}</h1>
+    {% if wo.description %}<p class="mb-3" style="white-space:pre-line">{{ wo.description }}</p>{% endif %}
+    <a class="d-flex gap-3 align-items-center border rounded-3 p-2 text-body" href="{{ wo.equipment.get_absolute_url }}">
+      <span class="d-inline-flex align-items-center justify-content-center flex-none" style="width:48px;height:48px;border-radius:10px;background:#EEF2F6;color:#475467">{% icon "equipment" 24 %}</span>
+      <span><span class="d-block fw-semibold">{{ wo.equipment.code }} · {{ wo.equipment.designation }}</span><span class="d-block muted small">{% translate "Criticité" %} {{ wo.equipment.criticality }}{% if wo.due_date %} · {% translate "échéance" %} {{ wo.due_date|date:"d/m/Y" }}{% endif %}</span></span>
+    </a>
+    {% if wo.status in "waiting_parts,waiting_external" and wo.waiting_reason %}<div class="alert alert-warning mt-3 mb-0">{{ wo.waiting_reason }}</div>{% endif %}
+  </section>
+
+  <section class="card-em">
+    <div class="d-flex justify-content-between align-items-baseline"><h2 class="mb-0">{% translate "Mon temps" %}</h2><span class="muted small">{% if running_entry %}{% translate "chronomètre en marche" %}{% else %}{% translate "arrêté" %}{% endif %}</span></div>
+    <div class="timer my-2" id="timer" {% if running_entry %}data-start="{{ running_entry.started_at|date:'U' }}"{% endif %}>{% if running_entry %}00:00:00{% else %}—{% endif %}</div>
+    {% include "workorders/_wo_actions.html" with mobile=True %}
+    {% if not technician %}<p class="muted small mt-2 mb-0">{% translate "Votre compte n'est relié à aucune fiche technicien : demandez au responsable de le faire (Équipes › Modifier le technicien)." %}</p>{% endif %}
+  </section>
+
+  {% if checklist %}
+  <section class="card-em">
+    <div class="d-flex justify-content-between align-items-baseline"><h2>{% translate "Check-list" %}</h2></div>
+    {% for item in checklist %}{% include "workorders/_checklist_item.html" %}{% endfor %}
+  </section>
+  {% endif %}
+
+  {% if plan_parts %}
+  <section class="card-em">
+    <h2>{% translate "Pièces prévues" %}</h2>
+    {% for part in plan_parts %}<div class="d-flex justify-content-between py-1 border-bottom"><span>{{ part.designation }}</span><span class="mono">× {{ part.quantity|number }}</span></div>{% endfor %}
+  </section>
+  {% endif %}
+
+  {% if show_stock_parts %}{% include "inventory/_wo_parts_mobile.html" %}{% endif %}
+
+  <section class="card-em">
+    <h2>{% if show_stock_parts %}{% translate "Pièces hors magasin" %}{% else %}{% translate "Pièces utilisées" %}{% endif %}</h2>
+    {% for part in parts %}
+      <div class="d-flex align-items-center gap-2 border rounded-3 p-2 mb-2">
+        <div class="flex-grow-1"><div class="fw-semibold">{{ part.designation }}</div><div class="muted small mono">{{ part.reference|default:"" }} · {% translate "qté" %} {{ part.quantity|number }}</div></div>
+        {% if editable %}<form method="post" action="{% url 'workorders:wo_part_delete' wo.pk part.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ here }}"><button class="btn btn-outline-secondary btn-icon" type="submit" aria-label="{% translate 'Retirer' %} {{ part.designation }}">{% icon "x" %}</button></form>{% endif %}
+      </div>
+    {% empty %}<p class="muted">{% translate "Aucune pièce." %}</p>{% endfor %}
+    {% if editable %}
+      <form class="row g-2" method="post" action="{% url 'workorders:wo_part_add' wo.pk %}" novalidate>{% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+        <div class="col-8"><label class="visually-hidden" for="mp-des">{% translate "Désignation" %}</label><input class="form-control" id="mp-des" name="designation" maxlength="200" required placeholder="{% translate 'Pièce utilisée' %}"></div>
+        <div class="col-4"><label class="visually-hidden" for="mp-qty">{% translate "Quantité" %}</label><input class="form-control" id="mp-qty" name="quantity" type="number" step="0.001" min="0" value="1" inputmode="decimal"></div>
+        <input type="hidden" name="unit_cost" value="0"><input type="hidden" name="reference" value="">
+        <div class="col-12"><button class="btn btn-outline-secondary w-100" type="submit" style="min-height:44px">+ {% translate "Ajouter la pièce" %}</button></div>
+      </form>
+    {% endif %}
+  </section>
+
+  <section class="card-em">
+    <h2>{% translate "Photos" %}</h2>
+    {% include "workorders/_attachments.html" %}
+  </section>
+
+  <section class="card-em">
+    <h2>{% translate "Diagnostic et travaux" %}</h2>
+    {% if editable %}
+      <form method="post" action="{% url 'workorders:wo_report' wo.pk %}" novalidate>{% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+        {% include "partials/_field.html" with field=report_form.failure_cause %}
+        {% include "partials/_field.html" with field=report_form.diagnosis %}
+        {% include "partials/_field.html" with field=report_form.work_done %}
+        <button class="btn btn-outline-secondary w-100" type="submit" style="min-height:44px">{% translate "Enregistrer" %}</button>
+      </form>
+    {% else %}
+      <div class="small"><div><span class="fw-semibold">{% translate "Cause" %}</span> : {{ wo.failure_cause|default:"—" }}</div><div class="mt-2" style="white-space:pre-line">{{ wo.work_done|default:"—" }}</div></div>
+    {% endif %}
+  </section>
+
+  {% if missing and can_execute %}
+    <div class="missing-box" role="status"><div class="fw-bold mb-1">{% translate "Avant de terminer" %} :</div>{% for m in missing %}<div>• {{ m }}</div>{% endfor %}</div>
+  {% endif %}
+  {% if can_execute and wo.status in "in_progress,waiting_parts,waiting_external" %}
+    <form method="post" action="{% url 'workorders:wo_action' wo.pk 'finish' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+      <button class="btn btn-primary btn-xl" type="submit">{% translate "Terminer l'intervention" %}</button></form>
+  {% endif %}
+  {% if wo.status == "done" %}
+    <div class="alert alert-success mb-0">{% translate "Intervention terminée. Elle attend la validation du responsable maintenance." %}</div>
+  {% endif %}
+</div>
+{% endwith %}
+{% endblock %}

@@ -1,0 +1,25 @@
+# EasyMaint en ligne (SaaS) : HTTPS automatique (Let's Encrypt) pour le domaine principal et pour le
+# sous-domaine de chaque entreprise (acme.mondomaine.tn). Utilisé par docker-compose.saas.yml.
+{
+	email {$EASYMAINT_ACME_EMAIL}
+	# Un certificat n'est demandé que pour un domaine autorisé par EasyMaint (entreprise active).
+	on_demand_tls {
+		ask http://web:8000/interne/tls/
+	}
+}
+
+https:// {
+	tls {
+		on_demand
+	}
+	# Adresses internes : jamais accessibles depuis Internet.
+	@interne path /interne/*
+	respond @interne 404
+
+	encode gzip
+	request_body {
+		max_size 30MB
+	}
+	header -Server
+	reverse_proxy web:8000
+}

@@ -1,0 +1,4 @@
+{% load i18n %}<nav class="tabs-em" aria-label="{% translate 'Coûts' %}">
+  <a href="{% url 'finance:costs' %}" class="{% if section == 'costs' %}active{% endif %}">{% translate "Analyse des coûts" %}</a>
+  <a href="{% url 'finance:budget' %}" class="{% if section == 'budget' %}active{% endif %}">{% translate "Budget / réel" %}</a>
+</nav>

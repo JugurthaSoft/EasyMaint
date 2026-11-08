@@ -1,0 +1,5 @@
+{% load i18n easymaint %}<section class="tiles h-100" aria-label="{% translate 'Coûts de maintenance' %}">
+  <a class="tile" href="{% url 'finance:costs' %}?regroupement=mois"><span class="lbl">{% translate "Coût de maintenance du mois" %}</span><span class="val">{{ finance.month|money }}</span><span class="sub">{% translate "OT validés et sorties hors OT" %}</span></a>
+  <a class="tile" href="{% url 'finance:budget' %}"><span class="lbl">{% translate "Dépensé depuis le 1er janvier" %}</span><span class="val{% if finance.rate and finance.rate > 100 %} val-red{% endif %}">{{ finance.year|money }}</span>
+    <span class="sub">{% if finance.budget %}{{ finance.rate|number:0 }} % {% translate "du budget annuel" %} ({{ finance.budget|money }}){% else %}{% translate "aucun budget défini" %}{% endif %}</span></a>
+</section>

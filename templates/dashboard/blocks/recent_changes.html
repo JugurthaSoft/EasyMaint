@@ -1,0 +1,6 @@
+{% load i18n %}<section class="card-em h-100">
+  <h2>{% translate "Dernières modifications du patrimoine" %}</h2>
+  {% for entry in recent_changes %}
+    <div class="d-flex gap-3 py-2 border-bottom"><span class="mono muted small text-nowrap">{{ entry.at|date:"d/m H:i" }}</span><span class="small"><span class="fw-semibold">{{ entry.user|default:entry.username }}</span> · {{ entry.get_action_display|lower }} · {{ entry.object_repr }}</span></div>
+  {% empty %}<p class="muted mb-0">{% translate "Aucune modification pour l'instant." %}</p>{% endfor %}
+</section>

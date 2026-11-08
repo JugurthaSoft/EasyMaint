@@ -1,0 +1,116 @@
+{% load static i18n easymaint %}<!doctype html>
+{% get_current_language as LANGUAGE_CODE %}{% get_current_language_bidi as LANGUAGE_BIDI %}
+<html lang="{{ LANGUAGE_CODE|default:'fr' }}" dir="{% if LANGUAGE_BIDI %}rtl{% else %}ltr{% endif %}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}EasyMaint{% endblock %} · EasyMaint</title>
+  <link rel="stylesheet" href="{% if LANGUAGE_BIDI %}{% static 'vendor/bootstrap.rtl.min.css' %}{% else %}{% static 'vendor/bootstrap.min.css' %}{% endif %}">
+  <link rel="stylesheet" href="{% static 'css/easymaint.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+{% if user.is_authenticated and tenant %}
+<div class="app">
+  <aside class="sidebar offcanvas-lg offcanvas-start" id="sidebar" tabindex="-1" aria-label="{% translate 'Navigation principale' %}">
+    <div class="offcanvas-header d-lg-none">
+      <span class="brand mb-0 pb-0"><span class="brand-logo">EM</span>EasyMaint</span>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="{% translate 'Fermer le menu' %}"></button>
+    </div>
+    <div class="offcanvas-body">
+      <a class="brand d-none d-lg-flex" href="{% url 'dashboard:home' %}"><span class="brand-logo">EM</span>EasyMaint</a>
+      <nav aria-label="{% translate 'Modules' %}">
+        {% for item in main_menu %}
+          <a class="nav-item-em{% if item.active %} active{% endif %}" href="{{ item.url }}"{% if item.active %} aria-current="page"{% endif %}>{% icon item.icon %}{{ item.label }}</a>
+        {% endfor %}
+      </nav>
+      {% if settings_menu %}
+        <div class="nav-section">{% translate "Paramètres" %}</div>
+        <nav aria-label="{% translate 'Paramètres' %}">
+          {% for item in settings_menu %}
+            <a class="nav-item-em{% if item.active %} active{% endif %}" href="{{ item.url }}"{% if item.active %} aria-current="page"{% endif %}>{% icon item.icon %}{{ item.label }}</a>
+          {% endfor %}
+        </nav>
+      {% endif %}
+      <div class="sidebar-foot">
+        <div class="fw-semibold">{{ tenant.name }}</div>
+        <div class="muted small"><a class="link-secondary" href="{% url 'core:about' %}">EasyMaint · {% translate "version" %} {{ easymaint_version }}</a></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="app-main">
+    <header class="topbar">
+      <button class="btn btn-outline-secondary btn-icon d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar" aria-label="{% translate 'Ouvrir le menu' %}">{% icon "menu" %}</button>
+      <form class="global-search" action="{% url 'core:search' %}" method="get" role="search">
+        <label class="search-box">
+          {% icon "search" %}
+          <span class="visually-hidden">{% translate "Recherche globale" %}</span>
+          <input id="global-search-input" type="search" name="q" autocomplete="off"
+                 placeholder="{% translate 'Rechercher un équipement, une localisation…' %}"
+                 hx-get="{% url 'core:search' %}" hx-trigger="input changed delay:250ms, search" hx-target="#search-dropdown">
+          <kbd aria-hidden="true">/</kbd>
+        </label>
+        <div id="search-dropdown" class="search-dropdown" aria-live="polite"></div>
+      </form>
+      <div class="flex-grow-1 d-none d-md-block"></div>
+      {% block topbar_actions %}{% endblock %}
+      {% if notif_latest is not None %}
+      <div class="dropdown">
+        <button class="btn btn-outline-secondary btn-icon position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                aria-label="{% blocktranslate count n=notif_unread_count %}{{ n }} notification non lue{% plural %}{{ n }} notifications non lues{% endblocktranslate %}">
+          {% icon "bell" %}
+          {% if notif_unread_count %}<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger">{% if notif_unread_count > 99 %}99+{% else %}{{ notif_unread_count }}{% endif %}</span>{% endif %}
+        </button>
+        <div class="dropdown-menu dropdown-menu-end p-0 notif-menu">
+          <div class="px-3 py-2 border-bottom fw-semibold">{% translate "Notifications" %}</div>
+          {% for n in notif_latest %}
+            <a class="dropdown-item py-2 text-wrap" href="{% url 'notifications:open' n.pk %}">
+              <span class="d-block fw-semibold small">{{ n.title }}</span>
+              <span class="d-block muted small">{{ n.created_at|date:"d/m H:i" }}{% if n.body %} · {{ n.body|truncatechars:70 }}{% endif %}</span>
+            </a>
+          {% empty %}
+            <div class="px-3 py-3 muted small">{% translate "Aucune nouvelle notification." %}</div>
+          {% endfor %}
+          <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
+            <a class="small" href="{% url 'notifications:list' %}">{% translate "Toutes mes notifications" %}</a>
+            {% if notif_unread_count %}
+            <form method="post" action="{% url 'notifications:read_all' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button class="btn btn-link btn-sm p-0" type="submit">{% translate "Tout marquer comme lu" %}</button></form>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      <div class="dropdown">
+        <button class="btn d-flex align-items-center gap-2 border-0 px-1" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+          <span class="rounded-circle d-inline-flex align-items-center justify-content-center fw-bold" style="width:36px;height:36px;background:#D1E0FF;color:#1849A9;font-size:13px">{{ user.initials }}</span>
+          <span class="text-start lh-sm d-none d-sm-block"><span class="d-block fw-semibold">{{ user }}</span><span class="d-block muted small fw-normal">{{ user.role|default:"" }}</span></span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">{% icon "user" %} {% translate "Mon profil" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}
+              <button class="dropdown-item" type="submit">{% icon "logout" %} {% translate "Se déconnecter" %}</button>
+            </form>
+          </li>
+        </ul>
+      </div>
+    </header>
+
+    <main class="content" id="contenu">
+      {% include "partials/_messages.html" %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% else %}
+  {% block bare %}{% endblock %}
+{% endif %}
+<script src="{% static 'vendor/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'vendor/htmx.min.js' %}"></script>
+<script src="{% static 'js/easymaint.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

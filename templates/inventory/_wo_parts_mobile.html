@@ -1,0 +1,22 @@
+{% load i18n easymaint inventory_tags %}
+<section class="card-em">
+  <h2>{% translate "Pièces du magasin" %}</h2>
+  {% for line in stock_parts %}
+    <div class="d-flex align-items-center gap-2 border rounded-3 p-2 mb-2">
+      <div class="flex-grow-1">
+        <div class="fw-semibold">{{ line.item.designation }}</div>
+        <div class="muted small mono">{{ line.item.reference }} · {% translate "demandé" %} {{ line.quantity|number }} · {% translate "délivré" %} {{ line.issued|number }}</div>
+      </div>
+      <span class="badge-em {{ line.status_badge }}">{{ line.get_status_display }}</span>
+      {% if line.is_open and can_request_parts and not line.issued %}<form method="post" action="{% url 'inventory:request_cancel' line.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ here }}"><button class="btn btn-outline-secondary btn-icon" type="submit" aria-label="{% translate 'Annuler la demande' %} {{ line.item.reference }}">{% icon "x" %}</button></form>{% endif %}
+    </div>
+  {% empty %}<p class="muted">{% translate "Aucune pièce demandée." %}</p>{% endfor %}
+  {% if stock_part_form %}
+    {% items_datalist %}
+    <form class="row g-2" method="post" action="{% url 'inventory:wo_request_part' wo.pk %}" novalidate>{% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+      <div class="col-8"><label class="visually-hidden" for="msp-item">{% translate "Article" %}</label><input class="form-control" id="msp-item" name="item" maxlength="40" list="items-datalist" autocomplete="off" placeholder="{% translate 'Référence de la pièce' %}" required></div>
+      <div class="col-4"><label class="visually-hidden" for="msp-qty">{% translate "Quantité" %}</label><input class="form-control" id="msp-qty" name="quantity" type="number" step="0.001" min="0" value="1" inputmode="decimal"></div>
+      <div class="col-12"><button class="btn btn-outline-primary w-100" type="submit" style="min-height:44px">{% translate "Demander au magasin" %}</button></div>
+    </form>
+  {% endif %}
+</section>

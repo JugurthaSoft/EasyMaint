@@ -1,0 +1,5 @@
+{% load i18n easymaint %}<section class="card-em h-100">
+  <h2>{% translate "Équipements les plus coûteux · année en cours" %}</h2>
+  {% for row in top_costly %}<div class="d-flex justify-content-between py-1 border-bottom small"><a href="{{ row.url }}?onglet=couts">{{ row.label|truncatechars:46 }}</a><span class="mono">{{ row.total|money }}</span></div>
+  {% empty %}<p class="muted mb-0">{% translate "Aucun coût depuis le 1er janvier." %}</p>{% endfor %}
+</section>

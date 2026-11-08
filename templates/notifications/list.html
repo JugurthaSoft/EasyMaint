@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Mes notifications" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% translate "Mes notifications" %}</h1>
+    <p class="sub">{% translate "Affectations, demandes, alertes, pièces à délivrer et OT à valider qui vous concernent. Les notifications lues sont effacées après 90 jours." %}</p></div>
+  {% if unread_total %}
+  <form method="post" action="{% url 'notifications:read_all' %}">{% csrf_token %}
+    <button class="btn btn-outline-secondary" type="submit">{% translate "Tout marquer comme lu" %}</button>
+  </form>
+  {% endif %}
+</div>
+<div class="d-flex gap-2 mb-3">
+  <a class="btn btn-sm {% if filter != 'non-lues' %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="{% url 'notifications:list' %}">{% translate "Toutes" %}</a>
+  <a class="btn btn-sm {% if filter == 'non-lues' %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?filtre=non-lues">{% blocktranslate with n=unread_total %}Non lues ({{ n }}){% endblocktranslate %}</a>
+</div>
+<div class="table-wrap"><table class="table-em">
+  <thead><tr><th>{% translate "Date" %}</th><th>{% translate "Type" %}</th><th>{% translate "Notification" %}</th><th></th></tr></thead>
+  <tbody>
+  {% for n in notifications %}
+    <tr{% if not n.is_read %} class="fw-semibold"{% endif %}>
+      <td class="mono small text-nowrap">{{ n.created_at|date:"d/m/Y H:i" }}</td>
+      <td class="small">{{ n.get_kind_display }}</td>
+      <td><a href="{% url 'notifications:open' n.pk %}">{{ n.title }}</a>{% if n.body %}<div class="small muted fw-normal">{{ n.body|truncatechars:140 }}</div>{% endif %}</td>
+      <td class="text-end small muted fw-normal">{% if n.is_read %}{% translate "lue" %}{% else %}<span class="badge text-bg-primary">{% translate "nouvelle" %}</span>{% endif %}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="4" class="empty-state">{% translate "Aucune notification." %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% include "partials/_pagination.html" with extra_query=filter|yesno:"filtre=non-lues," %}
+{% endblock %}

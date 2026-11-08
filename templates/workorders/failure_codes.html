@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Codes de défaillance" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% translate "Codes de défaillance" %}</h1><p class="sub">{% translate "Modes, causes et remèdes proposés dans le compte rendu des OT. Une liste courte se remplit mieux." %}</p></div>
+  <a class="btn btn-primary" href="{% url 'workorders:failure_code_create' %}">{% icon "plus" %} {% translate "Nouveau code" %}</a>
+</div>
+<div class="table-wrap">
+  <table class="table-em">
+    <thead><tr><th>{% translate "Type" %}</th><th>{% translate "Code" %}</th><th>{% translate "Libellé" %}</th><th></th></tr></thead>
+    <tbody>
+    {% for code in codes %}
+      <tr><td>{{ code.get_kind_display }}</td><td class="mono">{{ code.code }}</td><td>{{ code.name }}{% if not code.is_active %} <span class="badge-em b-muted">{% translate "inactif" %}</span>{% endif %}</td><td class="text-end"><a href="{% url 'workorders:failure_code_update' code.pk %}">{% translate "Modifier" %}</a></td></tr>
+    {% empty %}<tr><td colspan="4" class="empty-state">{% translate "Aucun code. Commencez par les causes les plus fréquentes." %}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

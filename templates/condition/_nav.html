@@ -1,0 +1,8 @@
+{% load i18n easymaint %}<nav class="tabs-em" aria-label="{% translate 'Conditionnel' %}">
+  <a href="{% url 'condition:overview' %}" class="{% if section == 'overview' %}active{% endif %}">{% translate "Vue d'ensemble" %}</a>
+  <a href="{% url 'condition:alert_list' %}" class="{% if section == 'alerts' %}active{% endif %}">{% translate "Alertes" %}</a>
+  <a href="{% url 'condition:session_list' %}" class="{% if section == 'sessions' %}active{% endif %}">{% translate "Mesures" %}</a>
+  <a href="{% url 'condition:rule_list' %}" class="{% if section == 'rules' %}active{% endif %}">{% translate "Règles" %}</a>
+  <a href="{% url 'condition:parameter_list' %}" class="{% if section == 'parameters' %}active{% endif %}">{% translate "Paramètres" %}</a>
+  {% if user|can:"imports.run" %}<a href="{% url 'condition:import_list' %}" class="{% if section == 'imports' %}active{% endif %}">{% translate "Imports" %}</a>{% endif %}
+</nav>

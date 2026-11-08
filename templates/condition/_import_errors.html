@@ -1,0 +1,9 @@
+{% load i18n %}{% if errors %}
+<section class="card-em mb-3">
+  <h2>{% translate "Lignes refusées" %}</h2>
+  <div class="table-wrap"><table class="table-em">
+    <thead><tr><th class="num">{% translate "Ligne" %}</th><th>{% translate "Motif" %}</th></tr></thead>
+    <tbody>{% for e in errors %}<tr><td class="num mono">{{ e.line }}</td><td>{{ e.messages|join:" · " }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endif %}

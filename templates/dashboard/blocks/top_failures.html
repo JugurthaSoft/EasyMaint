@@ -1,0 +1,5 @@
+{% load i18n easymaint %}<section class="card-em h-100">
+  <h2>{% translate "Équipements les plus défaillants · 12 mois" %}</h2>
+  {% for equipment, rel in top_failures %}<div class="d-flex justify-content-between py-1 border-bottom small"><a href="{{ equipment.get_absolute_url }}">{{ equipment.code }} · {{ equipment.designation|truncatechars:36 }}</a><span class="mono">{{ rel.failures }} · {{ rel.downtime_failure|number:1 }} h</span></div>
+  {% empty %}<p class="muted mb-0">{% translate "Aucune panne sur 12 mois." %}</p>{% endfor %}
+</section>

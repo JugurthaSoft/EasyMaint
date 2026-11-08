@@ -1,0 +1,15 @@
+{% load i18n easymaint %}<section class="card-em h-100" aria-labelledby="cond-title">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h2 id="cond-title" class="mb-0">{% translate "Alertes conditionnelles" %} {% if condition_alert_count %}<span class="badge-em b-red">{{ condition_alert_count }}</span>{% endif %}</h2>
+    <a class="small fw-semibold" href="{% url 'condition:alert_list' %}">{% translate "Toutes les alertes" %}</a>
+  </div>
+  {% for a in condition_alerts %}
+    <div class="d-flex flex-wrap align-items-center gap-2 py-2 border-bottom">
+      <span class="badge-em {{ a.level_badge }}">{{ a.get_level_display }}</span>
+      <a class="fw-semibold" href="{{ a.get_absolute_url }}">{{ a.point.equipment.code }}</a>
+      <span class="muted small">{{ a.point.name }} · {{ a.parameter.name }}</span>
+      <span class="mono ms-auto">{% if a.last_measurement %}{{ a.last_measurement.value|number }} {{ a.parameter.unit }}{% endif %}</span>
+      <span class="small muted">{{ a.get_status_display|lower }}{% if a.work_order %} · <a href="{{ a.work_order.get_absolute_url }}">{{ a.work_order.number }}</a>{% elif a.work_request %} · <a href="{{ a.work_request.get_absolute_url }}">{{ a.work_request.number }}</a>{% endif %}</span>
+    </div>
+  {% empty %}<p class="muted mb-0">{% translate "Aucune alerte active : toutes les mesures sont dans les seuils." %}</p>{% endfor %}
+</section>

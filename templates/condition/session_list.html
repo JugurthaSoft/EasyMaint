@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Mesures" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% translate "Maintenance conditionnelle" %}</h1><p class="sub">{% translate "Tournées de mesures, analyses vibratoires et analyses d'huile." %}</p></div>
+  {% if user|can:"imports.run" %}<a class="btn btn-outline-primary" href="{% url 'condition:import_list' %}">{% icon "upload" %} {% translate "Importer un fichier" %}</a>{% endif %}</div>
+{% include "condition/_nav.html" with section="sessions" %}
+<div class="pills mb-3">
+  <a class="pill{% if not current_kind %} active{% endif %}" href="?">{% translate "Toutes" %}</a>
+  {% for value, label in kinds %}<a class="pill{% if current_kind == value %} active{% endif %}" href="?type={{ value }}">{{ label }}</a>{% endfor %}
+</div>
+<div class="table-wrap">
+  <table class="table-em">
+    <thead><tr><th>{% translate "Date" %}</th><th>{% translate "Type" %}</th><th>{% translate "Équipement" %}</th><th>{% translate "Technicien" %}</th><th>{% translate "Observations" %}</th></tr></thead>
+    <tbody>
+    {% for s in sessions %}
+      <tr><td class="mono text-nowrap"><a href="{{ s.get_absolute_url }}">{{ s.measured_at|date:"d/m/Y H:i" }}</a></td><td>{{ s.get_kind_display }}</td><td><a href="{{ s.equipment.get_absolute_url }}?onglet=mesures">{{ s.equipment.code }}</a></td><td>{{ s.technician|default:"—" }}</td><td class="small">{{ s.observations|default:s.lab_conclusion|truncatechars:80 }}</td></tr>
+    {% empty %}<tr><td colspan="5" class="empty-state">{% translate "Aucune mesure." %}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "partials/_pagination.html" with extra_query="type="|add:current_kind %}
+{% endblock %}

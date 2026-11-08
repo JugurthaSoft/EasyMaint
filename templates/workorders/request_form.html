@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% translate "Déclarer une panne" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% translate "Déclarer une panne" %}</h1><p class="sub">{% translate "La demande est transmise à la maintenance, qui l'analyse et crée l'ordre de travail." %}</p></div></div>
+<form method="post" novalidate class="card-em" style="max-width:680px">{% csrf_token %}
+  {% include "partials/_form.html" %}
+  <div class="form-actions">
+    <a class="btn btn-outline-secondary" href="{% url 'workorders:request_list' %}">{% translate "Annuler" %}</a>
+    <button class="btn btn-primary" type="submit">{% translate "Envoyer la demande" %}</button>
+  </div>
+</form>
+{% endblock %}

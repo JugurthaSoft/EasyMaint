@@ -1,0 +1,27 @@
+# EasyMaint en ligne (SaaS), en complément de docker-compose.yml :
+#   docker compose -f docker-compose.yml -f docker-compose.saas.yml up -d --build
+# Caddy reçoit le trafic Internet (ports 80 et 443), obtient les certificats HTTPS et le transmet à
+# l'application, qui n'est plus exposée directement. Guide complet : docs/deploiement-cloud.md
+services:
+  web:
+    ports: !reset []
+
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    environment:
+      EASYMAINT_ACME_EMAIL: ${EASYMAINT_ACME_EMAIL:?Définir EASYMAINT_ACME_EMAIL dans .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+volumes:
+  caddy_data:
+  caddy_config:

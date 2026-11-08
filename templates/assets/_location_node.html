@@ -1,0 +1,21 @@
+{% load i18n easymaint %}<li>
+  <div class="tree-row">
+    {% icon "location" 16 %}
+    <a class="fw-semibold" href="{% url 'assets:equipment_list' %}?localisation={{ node.location.pk }}">{{ node.location.name }}</a>
+    <span class="muted small">{{ node.location.get_kind_display }} · {{ node.location.code }}</span>
+    <span class="badge-em b-gray">{{ node.total }}</span>
+    {% if not node.location.is_active %}<span class="badge-em b-muted">{% translate "désactivée" %}</span>{% endif %}
+    {% if user|can:"assets.manage" %}
+      <span class="actions">
+        <a href="{% url 'assets:location_create' %}?parent={{ node.location.pk }}">{% translate "Ajouter dessous" %}</a>
+        <a href="{% url 'assets:equipment_create' %}?localisation={{ node.location.pk }}">{% translate "Équipement" %}</a>
+        <a href="{% url 'assets:location_update' node.location.pk %}">{% translate "Modifier" %}</a>
+      </span>
+    {% endif %}
+  </div>
+  {% if node.children %}
+    <ul class="tree">
+      {% for child in node.children %}{% include "assets/_location_node.html" with node=child %}{% endfor %}
+    </ul>
+  {% endif %}
+</li>

@@ -1,0 +1,68 @@
+{% load i18n %}{% with here=request.get_full_path %}
+<div class="d-flex flex-wrap gap-2 align-items-start">
+  {% if can_execute and technician and wo.status in "to_plan,assigned,in_progress" %}
+    {% if running_entry %}
+      <form method="post" action="{% url 'workorders:wo_action' wo.pk 'stop_timer' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+        <button class="btn btn-outline-secondary{% if mobile %} btn-xl{% endif %}" type="submit">{% translate "Arrêter mon chronomètre" %}</button></form>
+    {% else %}
+      <form method="post" action="{% url 'workorders:wo_action' wo.pk 'start_timer' %}"{% if mobile %} class="w-100"{% endif %}>{% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+        <button class="btn btn-go{% if mobile %} btn-xl{% endif %}" type="submit">{% if wo.status == "in_progress" %}{% translate "Démarrer mon chronomètre" %}{% else %}{% translate "Démarrer l'intervention" %}{% endif %}</button></form>
+    {% endif %}
+  {% endif %}
+
+  {% if can_execute and wo.status == "in_progress" %}
+    <div class="dropdown">
+      <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">{% translate "Mettre en attente" %}</button>
+      <div class="dropdown-menu p-3" style="min-width:300px">
+        <form method="post" action="{% url 'workorders:wo_action' wo.pk 'wait_parts' %}" class="mb-3">{% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+          <label class="form-label" for="wp-{{ wo.pk }}">{% translate "Pièces attendues" %}</label>
+          <input class="form-control mb-2" id="wp-{{ wo.pk }}" name="reason" required maxlength="255">
+          <button class="btn btn-sm btn-outline-secondary" type="submit">{% translate "En attente de pièces" %}</button></form>
+        <form method="post" action="{% url 'workorders:wo_action' wo.pk 'wait_external' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+          <label class="form-label" for="we-{{ wo.pk }}">{% translate "Intervention externe attendue" %}</label>
+          <input class="form-control mb-2" id="we-{{ wo.pk }}" name="reason" required maxlength="255">
+          <button class="btn btn-sm btn-outline-secondary" type="submit">{% translate "En attente d'intervention externe" %}</button></form>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if can_execute and wo.status in "waiting_parts,waiting_external" %}
+    <form method="post" action="{% url 'workorders:wo_action' wo.pk 'resume' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+      <button class="btn btn-go" type="submit">{% translate "Reprendre l'intervention" %}</button></form>
+  {% endif %}
+
+  {% if wo.status == "done" and can_validate %}
+    <form method="post" action="{% url 'workorders:wo_action' wo.pk 'validate' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+      <button class="btn btn-primary" type="submit" data-confirm="{% translate 'Valider cet OT ? Les coûts seront figés et l’OT ne sera plus modifiable.' %}">{% translate "Valider" %}</button></form>
+    <div class="dropdown">
+      <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">{% translate "Renvoyer au technicien" %}</button>
+      <form class="dropdown-menu p-3" style="min-width:300px" method="post" action="{% url 'workorders:wo_action' wo.pk 'reopen' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+        <label class="form-label" for="ro-{{ wo.pk }}">{% translate "Ce qui doit être repris" %}</label>
+        <input class="form-control mb-2" id="ro-{{ wo.pk }}" name="reason" required maxlength="255">
+        <button class="btn btn-sm btn-outline-secondary" type="submit">{% translate "Renvoyer" %}</button></form>
+    </div>
+  {% endif %}
+
+  {% if can_manage and wo.is_open and not mobile %}
+    <a class="btn btn-outline-secondary" href="{% url 'workorders:wo_plan' wo.pk %}">{% translate "Planifier" %}</a>
+    <div class="dropdown">
+      <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">{% translate "Reporter" %}</button>
+      <form class="dropdown-menu p-3" style="min-width:300px" method="post" action="{% url 'preventive:wo_postpone' wo.pk %}">{% csrf_token %}
+        <label class="form-label" for="pp-date-{{ wo.pk }}">{% translate "Nouvelle date" %}</label>
+        <input class="form-control mb-2" id="pp-date-{{ wo.pk }}" type="date" name="new_date" required>
+        <label class="form-label" for="pp-reason-{{ wo.pk }}">{% translate "Motif du report" %}</label>
+        <input class="form-control mb-2" id="pp-reason-{{ wo.pk }}" name="reason" maxlength="200" required>
+        <button class="btn btn-sm btn-outline-secondary" type="submit">{% translate "Reporter" %}</button>
+        <p class="muted small mt-2 mb-0">{% translate "L'échéance d'origine est conservée pour le respect du planning." %}</p>
+      </form>
+    </div>
+    <div class="dropdown">
+      <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">{% translate "Annuler l'OT" %}</button>
+      <form class="dropdown-menu p-3" style="min-width:300px" method="post" action="{% url 'workorders:wo_action' wo.pk 'cancel' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+        <label class="form-label" for="ca-{{ wo.pk }}">{% translate "Motif d'annulation" %}</label>
+        <input class="form-control mb-2" id="ca-{{ wo.pk }}" name="reason" required maxlength="255">
+        <button class="btn btn-sm btn-outline-danger" type="submit">{% translate "Annuler l'OT" %}</button></form>
+    </div>
+  {% endif %}
+</div>
+{% endwith %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Réapprovisionnement" %}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'inventory:purchase_list' %}">{% translate "Demandes d'achat" %}</a> › {% translate "Réapprovisionnement" %}</div>
+<div class="page-head"><div><h1>{% translate "Articles sous le stock minimum" %}</h1>
+  <p class="sub">{% translate "Quantité proposée : de quoi revenir au stock maximum (à défaut au minimum), compte tenu des réservations. Une demande d'achat est préparée par fournisseur principal ; vous pourrez la modifier avant de l'imprimer." %}</p></div></div>
+<form method="post">{% csrf_token %}
+  <div class="table-wrap"><table class="table-em">
+    <thead><tr><th style="width:40px"><span class="visually-hidden">{% translate "Choisir" %}</span></th><th>{% translate "Article" %}</th><th class="num">{% translate "Disponible" %}</th><th class="num">{% translate "Mini" %}</th><th class="num">{% translate "Maxi" %}</th><th class="num">{% translate "À commander" %}</th><th>{% translate "Fournisseur principal" %}</th></tr></thead>
+    <tbody>
+    {% for i in items %}
+      <tr>
+        <td><input class="form-check-input" type="checkbox" name="item" value="{{ i.pk }}" id="ro-{{ i.pk }}"{% if i.proposed > 0 %} checked{% else %} disabled{% endif %}></td>
+        <td><label for="ro-{{ i.pk }}"><span class="mono">{{ i.reference }}</span> {{ i.designation }}</label>{% if i.is_critical %} <span class="badge-em b-red">{% translate "critique" %}</span>{% endif %}</td>
+        <td class="num">{{ i.available|number }}</td><td class="num">{{ i.min_stock|number }}</td><td class="num">{% if i.max_stock is not None %}{{ i.max_stock|number }}{% else %}—{% endif %}</td>
+        <td class="num fw-semibold">{{ i.proposed|number }} <span class="muted small">{{ i.get_unit_display }}</span></td>
+        <td>{{ i.preferred_supplier|default:"—" }}</td>
+      </tr>
+    {% empty %}<tr><td colspan="7" class="empty-state">{% translate "Aucun article sous son stock minimum." %}</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+  {% if items %}<div class="form-actions"><a class="btn btn-outline-secondary" href="{% url 'inventory:purchase_list' %}">{% translate "Annuler" %}</a><button class="btn btn-primary" type="submit">{% translate "Préparer les demandes d'achat" %}</button></div>{% endif %}
+</form>
+{% endblock %}

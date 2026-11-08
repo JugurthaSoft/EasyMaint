@@ -1,0 +1,84 @@
+{% extends "base.html" %}{% load i18n easymaint static %}
+{% block title %}{% translate "Indicateurs" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% translate "Indicateurs de maintenance" %}</h1><p class="sub">{% translate "Calculés sur les données réelles." %} <a href="{% url 'kpi:definitions' %}">{% translate "Définitions des indicateurs" %}</a></p></div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'kpi:export' %}?{{ query }}">{% icon "download" %} {% translate "Excel" %}</a>
+    <a class="btn btn-outline-secondary" href="{% url 'kpi:pdf' %}?{{ query }}" target="_blank" rel="noopener">{% icon "printer" %} {% translate "Rapport PDF" %}</a>
+  </div>
+</div>
+{% include "kpi/_nav.html" with section="kpi" %}
+<form method="get" class="card-em mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-6 col-md-2"><label class="form-label small" for="k-du">{% translate "Du" %}</label><input class="form-control" id="k-du" type="date" name="du" value="{{ f.start|date:'Y-m-d' }}"></div>
+    <div class="col-6 col-md-2"><label class="form-label small" for="k-au">{% translate "Au" %}</label><input class="form-control" id="k-au" type="date" name="au" value="{{ f.end|date:'Y-m-d' }}"></div>
+    <div class="col-md-3"><label class="form-label small" for="k-unit">{% translate "Unité" %}</label><select class="form-select" id="k-unit" name="unite"><option value="">{% translate "Toutes" %}</option>{% for u in units %}<option value="{{ u.pk }}"{% if f.unit.pk == u.pk %} selected{% endif %}>{{ u.name }}</option>{% endfor %}</select></div>
+    <div class="col-md-3"><label class="form-label small" for="k-fam">{% translate "Famille" %}</label><select class="form-select" id="k-fam" name="famille"><option value="">{% translate "Toutes" %}</option>{% for fam in families %}<option value="{{ fam.pk }}"{% if f.family.pk == fam.pk %} selected{% endif %}>{{ fam.name }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><label class="form-label small" for="k-type">{% translate "Type (coûts)" %}</label><select class="form-select" id="k-type" name="type"><option value="">{% translate "Tous" %}</option>{% for v, l in kinds %}<option value="{{ v }}"{% if f.kind == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+  </div>
+  {% if f.equipment %}<input type="hidden" name="equipement_id" value="{{ f.equipment.pk }}"><p class="small mt-2 mb-0">{% translate "Équipement" %} : <strong>{{ f.equipment }}</strong> · <a href="?du={{ f.start|date:'Y-m-d' }}&au={{ f.end|date:'Y-m-d' }}">{% translate "retirer ce filtre" %}</a></p>{% endif %}
+  <div class="mt-2"><button class="btn btn-primary" type="submit">{% translate "Calculer" %}</button> <span class="small muted ms-2">{% blocktranslate count n=d.equipment_count %}{{ n }} équipement concerné{% plural %}{{ n }} équipements concernés{% endblocktranslate %}</span></div>
+</form>
+
+<section class="tiles mb-3" aria-label="{% translate 'Fiabilité' %}">
+  <div class="tile"><span class="lbl">MTBF</span><span class="val">{% if rel.mtbf is not None %}{{ rel.mtbf|number:0 }} h{% else %}—{% endif %}</span><span class="sub">{% blocktranslate with n=rel.failures s=rel.failures_stopped %}{{ n }} panne(s), dont {{ s }} avec arrêt{% endblocktranslate %}</span></div>
+  <div class="tile"><span class="lbl">MTTR</span><span class="val">{% if rel.mttr is not None %}{{ rel.mttr|number:1 }} h{% else %}—{% endif %}</span><span class="sub">{% translate "arrêt moyen par panne" %} : {% if rel.mean_stop is not None %}{{ rel.mean_stop|number:1 }} h{% else %}—{% endif %}</span></div>
+  <div class="tile"><span class="lbl">{% translate "Disponibilité opérationnelle" %}</span><span class="val{% if rel.availability is not None and rel.availability < 95 %} val-orange{% endif %}">{% if rel.availability is not None %}{{ rel.availability|number:1 }} %{% else %}—{% endif %}</span><span class="sub">{% translate "intrinsèque" %} : {% if rel.intrinsic is not None %}{{ rel.intrinsic|number:1 }} %{% else %}—{% endif %}</span></div>
+  <div class="tile"><span class="lbl">{% translate "Arrêts de production" %}</span><span class="val">{{ rel.downtime_all|number:1 }} h</span><span class="sub">{% translate "temps requis" %} : {{ rel.required|number:0 }} h</span></div>
+</section>
+<section class="tiles mb-3" aria-label="{% translate 'Activité' %}">
+  <div class="tile"><span class="lbl">{% translate "Préventif réalisé" %}</span><span class="val">{% if d.preventive.realization_rate is not None %}{{ d.preventive.realization_rate|number:0 }} %{% else %}—{% endif %}</span><span class="sub">{% blocktranslate with r=d.preventive.realized t=d.preventive.due %}{{ r }} sur {{ t }} échus{% endblocktranslate %} · {% translate "planning respecté" %} {% if d.preventive.on_time_rate is not None %}{{ d.preventive.on_time_rate|number:0 }} %{% else %}—{% endif %}</span></div>
+  <div class="tile"><span class="lbl">{% translate "Taux de correctif" %}</span><span class="val">{% if d.corrective_rate is not None %}{{ d.corrective_rate|number:0 }} %{% else %}—{% endif %}</span><span class="sub">{% translate "en heures" %} : {% if d.corrective_hours_rate is not None %}{{ d.corrective_hours_rate|number:0 }} %{% else %}—{% endif %} · {{ d.closed_count }} {% translate "OT clos" %}</span></div>
+  <div class="tile"><span class="lbl">{% translate "Backlog" %}</span><span class="val">{{ d.backlog_hours|number:0 }} h</span><span class="sub">{{ d.backlog_days|number:1 }} {% translate "jours-homme" %} · {{ d.late }} {% translate "OT en retard" %}</span></div>
+  <div class="tile"><span class="lbl">{% translate "Coût de maintenance" %}</span><span class="val" style="font-size:22px">{{ d.cost|money }}</span><span class="sub">{% translate "pièces consommées" %} : {{ d.parts|money }} · {% translate "stock" %} : {{ d.stock_value|money }}</span></div>
+</section>
+
+<div class="row g-3">
+  <div class="col-xl-6"><section class="card-em"><h2>{% translate "Pannes et disponibilité · 12 mois" %}</h2><div class="chart-box" style="height:280px"><canvas data-kpi="failures" aria-label="{% translate 'Pannes et disponibilité par mois' %}"></canvas></div></section></div>
+  <div class="col-xl-6"><section class="card-em"><h2>{% translate "MTBF et MTTR · 12 mois" %}</h2><div class="chart-box" style="height:280px"><canvas data-kpi="mtbf" aria-label="{% translate 'MTBF et MTTR par mois' %}"></canvas></div></section></div>
+  <div class="col-xl-4"><section class="card-em"><h2>{% translate "Répartition des OT clos" %}</h2>
+    {% if split.values %}<div class="chart-box" style="height:240px"><canvas data-kpi="split" aria-label="{% translate 'OT par type' %}"></canvas></div>{% else %}<p class="muted mb-0">{% translate "Aucun OT clos sur la période." %}</p>{% endif %}
+    {% for label, n, h in kind_rows %}<div class="d-flex justify-content-between small border-bottom py-1"><span>{{ label }}</span><span class="mono">{{ n }} · {{ h|default:0|number:1 }} h</span></div>{% endfor %}
+  </section></div>
+  <div class="col-xl-4"><section class="card-em"><h2>{% translate "Interventions par unité" %}</h2>
+    {% if units_chart.values %}<div class="chart-box" style="height:240px"><canvas data-kpi="units" aria-label="{% translate 'OT clos par unité' %}"></canvas></div>{% else %}<p class="muted mb-0">—</p>{% endif %}
+  </section></div>
+  <div class="col-xl-4"><section class="card-em"><h2>{% translate "Coût mensuel · 12 mois" %}</h2><div class="chart-box" style="height:240px"><canvas data-kpi="cost" aria-label="{% translate 'Coût par mois' %}"></canvas></div></section></div>
+  <div class="col-xl-6"><section class="card-em"><h2>{% translate "Top 10 des équipements les plus défaillants" %}</h2>
+    {% for row in d.top_failures %}<div class="d-flex justify-content-between py-1 border-bottom small"><a href="{{ row.equipment.get_absolute_url }}">{{ row.equipment.code }} · {{ row.equipment.designation|truncatechars:38 }}</a><span class="mono">{{ row.rel.failures }} {% translate "pannes" %} · {{ row.rel.downtime_failure|number:1 }} h</span></div>
+    {% empty %}<p class="muted mb-0">{% translate "Aucune panne sur la période." %}</p>{% endfor %}
+  </section></div>
+  <div class="col-xl-6"><section class="card-em"><h2>{% translate "Top 10 des équipements les plus coûteux" %}</h2>
+    {% for row in d.top_costs %}<div class="d-flex justify-content-between py-1 border-bottom small"><a href="{{ row.equipment.get_absolute_url }}?onglet=couts">{{ row.equipment.code }} · {{ row.equipment.designation|truncatechars:38 }}</a><span class="mono">{{ row.cost|money }}</span></div>
+    {% empty %}<p class="muted mb-0">{% translate "Aucun coût sur la période." %}</p>{% endfor %}
+  </section></div>
+</div>
+
+<h2 class="h5 mt-2">{% translate "Par équipement" %}</h2>
+<div class="table-wrap">
+  <table class="table-em">
+    <thead><tr><th>{% translate "Équipement" %}</th><th class="num">{% translate "Temps requis" %}</th><th class="num">{% translate "Pannes" %}</th><th class="num">{% translate "Arrêts" %}</th><th class="num">MTBF</th><th class="num">MTTR</th><th class="num">{% translate "Disponibilité" %}</th><th class="num">{% translate "Coût" %}</th></tr></thead>
+    <tbody>
+    {% for row in d.table %}
+      <tr>
+        <td><a href="?du={{ f.start|date:'Y-m-d' }}&au={{ f.end|date:'Y-m-d' }}&equipement_id={{ row.equipment.pk }}">{{ row.equipment.code }}</a> <span class="small">{{ row.equipment.designation|truncatechars:40 }}</span></td>
+        <td class="num">{{ row.rel.required|number:0 }} h</td>
+        <td class="num">{{ row.rel.failures }}{% if row.rel.failures_stopped %} <span class="muted small">({{ row.rel.failures_stopped }})</span>{% endif %}</td>
+        <td class="num">{{ row.rel.downtime_all|number:1 }} h</td>
+        <td class="num">{% if row.rel.mtbf is not None %}{{ row.rel.mtbf|number:0 }} h{% else %}—{% endif %}</td>
+        <td class="num">{% if row.rel.mttr is not None %}{{ row.rel.mttr|number:1 }} h{% else %}—{% endif %}</td>
+        <td class="num">{% if row.rel.availability is not None %}{{ row.rel.availability|number:1 }} %{% else %}—{% endif %}</td>
+        <td class="num">{{ row.cost|money }}</td>
+      </tr>
+    {% empty %}<tr><td colspan="8" class="empty-state">{% translate "Aucun équipement." %}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="small muted mt-2">{% translate "Pannes : entre parenthèses, celles avec arrêt de production. Cliquez sur un équipement pour ne calculer que ses indicateurs." %}</p>
+{{ trend|json_script:"kpi-trend" }}{{ split|json_script:"kpi-split" }}{{ units_chart|json_script:"kpi-units" }}
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'vendor/chart.umd.min.js' %}"></script>
+<script src="{% static 'js/kpi_charts.js' %}"></script>
+{% endblock %}

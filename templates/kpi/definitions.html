@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% translate "Définitions des indicateurs" %}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'kpi:indicators' %}">{% translate "Indicateurs" %}</a> › {% translate "Définitions" %}</div>
+<div class="page-head"><div><h1>{% translate "Définitions des indicateurs" %}</h1><p class="sub">{% translate "Formules et périodes de calcul utilisées par EasyMaint. La période est celle choisie sur la page des indicateurs ; les graphiques couvrent les 12 derniers mois civils." %}</p></div></div>
+{% include "kpi/_nav.html" with section="definitions" %}
+<div class="card-em" style="max-width:900px">
+  <dl class="mb-0">
+  {% for key, label, text in definitions %}
+    <dt class="mt-2">{{ label }}</dt><dd class="mb-2">{{ text }}</dd>
+  {% endfor %}
+  </dl>
+</div>
+{% endblock %}

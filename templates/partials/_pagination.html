@@ -1,0 +1,10 @@
+{% load i18n %}{% if page_obj.has_other_pages %}
+<nav class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-3" aria-label="{% translate 'Pagination' %}">
+  <span class="muted small">{% blocktranslate with start=page_obj.start_index end=page_obj.end_index total=page_obj.paginator.count %}{{ start }} à {{ end }} sur {{ total }}{% endblocktranslate %}</span>
+  <div class="d-flex gap-2">
+    {% if page_obj.has_previous %}<a class="btn btn-sm btn-outline-secondary" href="?{% if extra_query %}{{ extra_query }}&amp;{% endif %}page={{ page_obj.previous_page_number }}"{% if hx_target %} hx-get="?{% if extra_query %}{{ extra_query }}&amp;{% endif %}page={{ page_obj.previous_page_number }}" hx-target="#{{ hx_target }}" hx-push-url="true"{% endif %}>{% translate "Précédent" %}</a>{% endif %}
+    <span class="btn btn-sm disabled border-0">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a class="btn btn-sm btn-outline-secondary" href="?{% if extra_query %}{{ extra_query }}&amp;{% endif %}page={{ page_obj.next_page_number }}"{% if hx_target %} hx-get="?{% if extra_query %}{{ extra_query }}&amp;{% endif %}page={{ page_obj.next_page_number }}" hx-target="#{{ hx_target }}" hx-push-url="true"{% endif %}>{% translate "Suivant" %}</a>{% endif %}
+  </div>
+</nav>
+{% endif %}

@@ -1,0 +1,9 @@
+{% load i18n %}<section class="card-em h-100">
+  <h2>{% translate "OT en retard" %}</h2>
+  {% for o in late_orders %}
+    <div class="d-flex justify-content-between align-items-baseline gap-2 py-1">
+      <a href="{{ o.get_absolute_url }}"><span class="mono">{{ o.number }}</span> · {{ o.equipment.code }} · {{ o.title|truncatechars:34 }}</a>
+      <span class="small text-danger text-nowrap">{{ o.due_date|date:"d/m/Y" }}</span>
+    </div>
+  {% empty %}<p class="muted mb-0">{% translate "Aucun OT en retard." %}</p>{% endfor %}
+</section>

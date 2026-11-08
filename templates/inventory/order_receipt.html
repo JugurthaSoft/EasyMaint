@@ -1,0 +1,36 @@
+{% extends "base.html" %}{% load i18n easymaint inventory_tags %}
+{% block title %}{% translate "Entrée sur bon de commande" %}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'inventory:item_list' %}">{% translate "Magasin" %}</a> › {% translate "Entrée sur bon de commande" %}</div>
+<div class="page-head"><div><h1>{% translate "Entrée sur bon de commande" %}</h1>
+  <p class="sub">{% translate "Recopiez le bon de commande papier du service achats : quantités reçues et prix unitaires HT du BC. Le stock, le coût moyen et le prix chez le fournisseur sont mis à jour." %}</p></div></div>
+{% items_datalist %}
+<form method="post" novalidate class="card-em">{% csrf_token %}<input type="hidden" name="rows" value="{{ row_count }}">
+  {% if row_errors %}<div class="alert alert-danger">{% for e in row_errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+  <div class="row">
+    <div class="col-md-3">{% include "partials/_field.html" with field=form.supplier %}</div>
+    <div class="col-md-3">{% include "partials/_field.html" with field=form.purchase_order %}</div>
+    <div class="col-md-3">{% include "partials/_field.html" with field=form.delivery_note %}</div>
+    <div class="col-md-3">{% include "partials/_field.html" with field=form.warehouse %}</div>
+  </div>
+  <div class="table-responsive"><table class="table-em">
+    <thead><tr><th style="width:40px">#</th><th>{% translate "Article (référence)" %}</th><th style="width:160px" class="num">{% translate "Quantité reçue" %}</th><th style="width:180px" class="num">{% translate "Prix unitaire HT du BC" %}</th></tr></thead>
+    <tbody>
+    {% for index, values in rows %}
+      <tr>
+        <td class="muted">{{ index|add:1 }}</td>
+        <td><input class="form-control form-control-sm" name="l-{{ index }}-item" value="{{ values.item|default:'' }}" list="items-datalist" autocomplete="off" maxlength="80" aria-label="{% translate 'Article, ligne' %} {{ index|add:1 }}"></td>
+        <td><input class="form-control form-control-sm text-end" name="l-{{ index }}-quantity" value="{{ values.quantity|default:'' }}" inputmode="decimal" aria-label="{% translate 'Quantité, ligne' %} {{ index|add:1 }}"></td>
+        <td><input class="form-control form-control-sm text-end" name="l-{{ index }}-unit_cost" value="{{ values.unit_cost|default:'' }}" inputmode="decimal" aria-label="{% translate 'Prix unitaire, ligne' %} {{ index|add:1 }}"></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <p class="small mt-2"><a href="?lignes={{ row_count|add:8 }}">{% translate "Plus de lignes" %}</a> · <span class="muted">{% translate "Les lignes vides sont ignorées. Tout le bon est enregistré, ou rien en cas d'erreur." %}</span></p>
+  <div class="form-actions">
+    <a class="btn btn-outline-secondary" href="{% url 'inventory:item_list' %}">{% translate "Annuler" %}</a>
+    <button class="btn btn-primary" type="submit">{% translate "Enregistrer l'entrée" %}</button>
+  </div>
+</form>
+{% endblock %}

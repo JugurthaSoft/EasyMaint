@@ -1,0 +1,51 @@
+{% load i18n easymaint inventory_tags %}
+<div class="row g-3">
+  <div class="col-xl-7">
+    <section class="card-em">
+      <h2>{% translate "Nomenclature des pièces de rechange" %}</h2>
+      <div class="table-responsive"><table class="table-em">
+        <thead><tr><th>{% translate "Article" %}</th><th>{% translate "Repère" %}</th><th class="num">{% translate "Qté montée" %}</th><th class="num">{% translate "Disponible" %}</th><th></th></tr></thead>
+        <tbody>
+        {% for link in bom %}
+          <tr>
+            <td><a class="mono small" href="{{ link.item.get_absolute_url }}">{{ link.item.reference }}</a> {{ link.item.designation }}{% if link.item.is_critical %} <span class="badge-em b-red">{% translate "critique" %}</span>{% endif %}</td>
+            <td class="small">{{ link.position|default:"—" }}</td>
+            <td class="num">{{ link.quantity|number }}</td>
+            <td class="num">{% if link.stock %}<span class="{% if link.stock.below_min %}text-danger fw-semibold{% endif %}">{{ link.stock.available|number }}</span> <span class="muted small">{{ link.item.get_unit_display }}</span>{% endif %}</td>
+            <td class="text-end">{% if bom_form %}<form method="post" action="{% url 'inventory:equipment_part_delete' link.pk %}">{% csrf_token %}<button class="btn btn-sm btn-link text-danger p-0" type="submit">{% translate "Retirer" %}</button></form>{% endif %}</td>
+          </tr>
+        {% empty %}<tr><td colspan="5" class="empty-state">{% translate "Aucune pièce de rechange référencée pour cet équipement." %}</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+      {% if bom_form %}
+        {% items_datalist %}
+        <form class="row g-2 mt-2 align-items-end" method="post" action="{% url 'inventory:equipment_part_add' equipment.pk %}" novalidate>{% csrf_token %}
+          <div class="col-md-5"><label class="form-label small" for="bom-item">{% translate "Article" %}</label><input class="form-control" id="bom-item" name="item" maxlength="40" list="items-datalist" autocomplete="off" placeholder="{% translate 'Référence' %}" required></div>
+          <div class="col-md-2"><label class="form-label small" for="bom-qty">{% translate "Qté" %}</label><input class="form-control" id="bom-qty" name="quantity" type="number" step="0.001" min="0" value="1"></div>
+          <div class="col-md-4"><label class="form-label small" for="bom-pos">{% translate "Repère / emplacement" %}</label><input class="form-control" id="bom-pos" name="position" maxlength="150"></div>
+          <div class="col-md-1"><button class="btn btn-outline-secondary w-100" type="submit" aria-label="{% translate 'Ajouter à la nomenclature' %}">{% icon "plus" 16 %}</button></div>
+        </form>
+      {% endif %}
+    </section>
+  </div>
+  <div class="col-xl-5">
+    {% if equipment_open_parts %}
+    <section class="card-em">
+      <h2>{% translate "Pièces en attente pour ses OT" %}</h2>
+      {% for line in equipment_open_parts %}
+        <div class="d-flex justify-content-between py-1 border-bottom small"><span>{% include "inventory/_wo_ref.html" with order=line.work_order %} · {{ line.item.reference }}</span><span class="mono">{{ line.remaining|number }}</span></div>
+      {% endfor %}
+    </section>
+    {% endif %}
+    <section class="card-em">
+      <h2>{% translate "Consommations" %}</h2>
+      {% for m in equipment_consumption %}
+        <div class="d-flex flex-wrap justify-content-between gap-2 py-1 border-bottom small">
+          <span class="mono">{{ m.moved_at|date:"d/m/Y" }}</span>
+          <span class="flex-grow-1"><a href="{{ m.item.get_absolute_url }}">{{ m.item.reference }}</a>{% if m.work_order %} · {% include "inventory/_wo_ref.html" with order=m.work_order %}{% endif %}</span>
+          <span class="mono">{{ m.quantity|number }}</span><span class="mono">{{ m.value|money }}</span>
+        </div>
+      {% empty %}<p class="muted mb-0">{% translate "Aucune pièce sortie pour cet équipement." %}</p>{% endfor %}
+    </section>
+  </div>
+</div>

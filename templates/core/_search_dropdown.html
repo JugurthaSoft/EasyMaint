@@ -1,0 +1,17 @@
+{% load i18n %}{% if query|length >= 2 %}
+  {% regroup results by category as groups %}
+  {% for group in groups %}
+    <div class="search-group">{{ group.grouper }}</div>
+    {% for result in group.list %}
+      <a class="search-item" href="{{ result.url }}">
+        <span class="flex-grow-1 min-w-0">
+          <span class="d-block fw-semibold text-truncate">{{ result.title }}</span>
+          {% if result.subtitle %}<span class="d-block muted small text-truncate">{{ result.subtitle }}</span>{% endif %}
+        </span>
+        {% if result.badge %}<span class="badge-em {{ result.badge_class }}">{{ result.badge }}</span>{% endif %}
+      </a>
+    {% endfor %}
+  {% empty %}
+    <div class="p-3 muted">{% blocktranslate %}Aucun résultat pour « {{ query }} ».{% endblocktranslate %}</div>
+  {% endfor %}
+{% endif %}

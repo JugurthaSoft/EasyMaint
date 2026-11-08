@@ -1,0 +1,9 @@
+{% load i18n easymaint %}{% if user|can:"stock.move" %}
+<div class="d-flex flex-wrap gap-2">
+  {% if not item %}<a class="btn btn-primary" href="{% url 'inventory:order_receipt' %}">{% icon "plus" %} {% translate "Entrée sur bon de commande" %}</a>{% endif %}
+  <a class="btn {% if item %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="{% url 'inventory:movement_create' 'entree' %}{% if item %}?article={{ item.pk }}{% endif %}">{% if item %}{% icon "plus" %} {% endif %}{% translate "Entrée" %}</a>
+  <a class="btn btn-outline-secondary" href="{% url 'inventory:movement_create' 'sortie' %}{% if item %}?article={{ item.pk }}{% endif %}">{% translate "Sortie" %}</a>
+  <a class="btn btn-outline-secondary" href="{% url 'inventory:movement_create' 'transfert' %}{% if item %}?article={{ item.pk }}{% endif %}">{% translate "Transfert" %}</a>
+  <a class="btn btn-outline-secondary" href="{% url 'inventory:movement_create' 'ajustement' %}{% if item %}?article={{ item.pk }}{% endif %}">{% translate "Ajustement" %}</a>
+</div>
+{% endif %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{{ supplier.name }}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'inventory:supplier_list' %}">{% translate "Fournisseurs" %}</a> › {{ supplier.name }}</div>
+<div class="page-head"><div><h1>{{ supplier.name }}</h1><p class="sub mono">{{ supplier.code }}</p></div>{% if user|can:"inventory.manage" %}<a class="btn btn-outline-secondary" href="{% url 'inventory:supplier_update' supplier.pk %}">{% icon "edit" %} {% translate "Modifier" %}</a>{% endif %}</div>
+<div class="row g-3">
+  <div class="col-xl-4"><section class="card-em"><h2>{% translate "Coordonnées" %}</h2><div class="kv">
+    <div><div class="k">{% translate "Contact" %}</div><div class="v">{{ supplier.contact_name|default:"—" }}</div></div>
+    <div><div class="k">{% translate "Téléphone" %}</div><div class="v mono">{{ supplier.phone|default:"—" }}</div></div>
+    <div><div class="k">{% translate "E-mail" %}</div><div class="v">{% if supplier.email %}<a href="mailto:{{ supplier.email }}">{{ supplier.email }}</a>{% else %}—{% endif %}</div></div>
+    <div><div class="k">{% translate "Matricule fiscal" %}</div><div class="v mono">{{ supplier.tax_id|default:"—" }}</div></div>
+    <div><div class="k">{% translate "Adresse" %}</div><div class="v">{{ supplier.address|default:"—"|linebreaksbr }}</div></div>
+  </div>{% if supplier.notes %}<p class="small mt-2 mb-0">{{ supplier.notes|linebreaksbr }}</p>{% endif %}</section></div>
+  <div class="col-xl-8">
+    <section class="card-em"><h2>{% translate "Articles fournis" %}</h2>
+      <div class="table-responsive"><table class="table-em"><thead><tr><th>{% translate "Article" %}</th><th>{% translate "Réf. fournisseur" %}</th><th class="num">{% translate "Prix" %}</th><th class="num">{% translate "Délai" %}</th></tr></thead>
+      <tbody>{% for l in links %}<tr><td><a class="mono small" href="{{ l.item.get_absolute_url }}">{{ l.item.reference }}</a> {{ l.item.designation }}{% if l.is_preferred %} <span class="badge-em b-green">{% translate "principal" %}</span>{% endif %}</td><td class="mono small">{{ l.supplier_reference|default:"—" }}</td><td class="num">{% if l.price is not None %}{{ l.price|money }}{% else %}—{% endif %}</td><td class="num">{% if l.lead_time_days %}{{ l.lead_time_days }} j{% else %}—{% endif %}</td></tr>
+      {% empty %}<tr><td colspan="4" class="empty-state">{% translate "Aucun article associé." %}</td></tr>{% endfor %}</tbody></table></div>
+    </section>
+    <section class="card-em"><h2>{% translate "Dernières entrées en stock" %}</h2>
+      {% for m in receipts %}<div class="d-flex justify-content-between py-1 border-bottom small"><span><span class="mono">{{ m.moved_at|date:"d/m/Y" }}</span> · <a href="{{ m.item.get_absolute_url }}">{{ m.item.reference }}</a> × {{ m.quantity|number }}{% if m.document %} · {{ m.document }}{% endif %}</span><span class="mono">{{ m.unit_cost|money }}</span></div>
+      {% empty %}<p class="muted mb-0">{% translate "Aucune entrée enregistrée avec ce fournisseur." %}</p>{% endfor %}
+    </section>
+  </div>
+</div>
+{% endblock %}

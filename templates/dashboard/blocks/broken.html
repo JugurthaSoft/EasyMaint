@@ -1,0 +1,6 @@
+{% load i18n %}<section class="card-em h-100">
+  <h2>{% translate "Équipements en panne" %}</h2>
+  {% for item in broken_list %}
+    <div class="d-flex justify-content-between align-items-center gap-2 py-1"><a href="{{ item.get_absolute_url }}"><span class="crit crit-{{ item.criticality }} me-1">{{ item.criticality }}</span> {{ item.code }} · {{ item.designation }}</a></div>
+  {% empty %}<p class="muted mb-0">{% translate "Aucun équipement en panne." %}</p>{% endfor %}
+</section>

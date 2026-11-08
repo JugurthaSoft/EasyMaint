@@ -1,0 +1,10 @@
+{% load i18n easymaint %}<tr>
+  <td><span class="badge-em {{ alert.level_badge }}">{% if alert.back_to_normal %}{% translate "Revenue normale" %}{% else %}{{ alert.get_level_display }}{% endif %}</span>{% if alert.max_level != alert.level %}<div class="muted small">{% translate "max." %} {{ alert.get_max_level_display|lower }}</div>{% endif %}</td>
+  <td class="text-nowrap"><a class="fw-semibold" href="{{ alert.point.equipment.get_absolute_url }}?onglet=mesures">{{ alert.point.equipment.code }}</a><div class="small"><a href="{{ alert.point.get_absolute_url }}">{{ alert.point.name }}</a></div></td>
+  <td>{{ alert.parameter.name }}</td>
+  <td class="num">{% if alert.last_measurement %}{{ alert.last_measurement.value|number }} {{ alert.parameter.unit }}{% endif %}</td>
+  <td class="mono small text-nowrap">{{ alert.opened_at|date:"d/m/Y" }}</td>
+  <td>{% if alert.status == "open" %}<span class="badge-em b-purple">{{ alert.get_status_display }}</span>{% elif alert.status == "acknowledged" %}<span class="badge-em b-gray">{{ alert.get_status_display }}</span>{% else %}<span class="badge-em b-muted">{{ alert.get_status_display }}</span>{% endif %}</td>
+  <td class="small text-nowrap">{% if alert.work_order %}<a href="{{ alert.work_order.get_absolute_url }}">{{ alert.work_order.number }}</a>{% elif alert.work_request %}<a href="{{ alert.work_request.get_absolute_url }}">{{ alert.work_request.number }}</a>{% else %}—{% endif %}</td>
+  <td class="text-end"><a href="{{ alert.get_absolute_url }}">{% translate "Ouvrir" %}</a></td>
+</tr>

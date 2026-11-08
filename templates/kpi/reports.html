@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Rapports mensuels" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% translate "Indicateurs de maintenance" %}</h1><p class="sub">{% translate "Le rapport du mois écoulé est produit automatiquement chaque 1er du mois, la nuit, et conservé ici." %}</p></div></div>
+{% include "kpi/_nav.html" with section="reports" %}
+<div class="row g-3">
+  <div class="col-xl-4">
+    <form method="post" action="{% url 'kpi:report_generate' %}" class="card-em">{% csrf_token %}
+      <h2>{% translate "Produire un rapport" %}</h2>
+      <label class="form-label" for="r-mois">{% translate "Mois" %}</label>
+      <input class="form-control mb-2" id="r-mois" type="month" name="mois" value="{{ default_month }}" required>
+      <p class="small muted">{% translate "Un rapport existant pour ce mois est remplacé (utile après la saisie tardive d'OT)." %}</p>
+      <button class="btn btn-primary" type="submit">{% translate "Produire" %}</button>
+    </form>
+  </div>
+  <div class="col-xl-8">
+    <div class="table-wrap"><table class="table-em">
+      <thead><tr><th>{% translate "Mois" %}</th><th>{% translate "Produit le" %}</th><th>{% translate "Par" %}</th><th></th></tr></thead>
+      <tbody>{% for r in reports %}<tr><td class="fw-semibold text-capitalize">{{ r.label }}</td><td class="mono small">{{ r.generated_at|date:"d/m/Y H:i" }}</td><td class="small">{% if r.generated_by %}{{ r.generated_by }}{% else %}{% translate "planificateur" %}{% endif %}</td>
+        <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{% url 'kpi:report_file' r.pk %}" target="_blank" rel="noopener">{% icon "download" %} PDF</a></td></tr>
+      {% empty %}<tr><td colspan="4" class="empty-state">{% translate "Aucun rapport pour l'instant : le premier sera produit le 1er du mois prochain, ou dès maintenant avec « Produire »." %}</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </div>
+</div>
+{% endblock %}

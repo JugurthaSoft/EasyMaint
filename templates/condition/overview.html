@@ -1,0 +1,39 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Maintenance conditionnelle" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% translate "Maintenance conditionnelle" %}</h1><p class="sub">{% translate "Surveillance de l'état réel des machines : mesures, seuils, alertes." %}</p></div>
+</div>
+{% include "condition/_nav.html" with section="overview" %}
+<section class="tiles mb-3" aria-label="{% translate 'Synthèse' %}">
+  <a class="tile" href="{% url 'condition:alert_list' %}"><span class="lbl">{% translate "Alertes actives" %}</span><span class="val{% if data.alerts %} val-red{% endif %}">{{ data.alerts|length }}</span><span class="sub">{% blocktranslate with n=data.open %}dont {{ n }} non acquittée(s){% endblocktranslate %}</span></a>
+  <div class="tile"><span class="lbl">{% translate "Critique · alarme · attention" %}</span><span class="val">{{ data.critical }} · {{ data.alarm }} · {{ data.warning }}</span><span class="sub">{% translate "niveau actuel des alertes" %}</span></div>
+  <div class="tile"><span class="lbl">{% translate "Points surveillés" %}</span><span class="val">{{ data.points }}</span><span class="sub">{% translate "points de mesure actifs" %}</span></div>
+  <a class="tile" href="{% url 'condition:session_list' %}"><span class="lbl">{% translate "Tournées · 30 jours" %}</span><span class="val">{{ data.sessions_30 }}</span><span class="sub">{% translate "relevés, analyses vibratoires et d'huile" %}</span></a>
+</section>
+<section class="mb-3">
+  <h2 class="h6 fw-semibold mb-2">{% translate "Alertes actives" %}</h2>
+  {% include "condition/_alerts_table.html" with alerts=data.alerts %}
+</section>
+<div class="row g-3">
+  <div class="col-xl-7">
+    <section class="card-em">
+      <h2>{% translate "Équipements surveillés" %}</h2>
+      <table class="table-em"><thead><tr><th>{% translate "Équipement" %}</th><th class="num">{% translate "Points" %}</th><th class="num">{% translate "Alertes" %}</th><th></th></tr></thead><tbody>
+      {% for eq in equipment_list %}
+        <tr><td><a class="fw-semibold" href="{{ eq.get_absolute_url }}?onglet=mesures">{{ eq.code }}</a> <span class="muted small">{{ eq.designation }}</span></td><td class="num">{{ eq.n_points }}</td><td class="num">{% if eq.n_alerts %}<span class="badge-em b-red">{{ eq.n_alerts }}</span>{% else %}0{% endif %}</td>
+          <td class="text-end text-nowrap">{% if user|can:"condition.record" %}<a href="{% url 'condition:session_create' eq.pk %}">{% translate "Saisir des mesures" %}</a>{% endif %}</td></tr>
+      {% empty %}<tr><td colspan="4" class="empty-state">{% translate "Aucun point de mesure. Ajoutez-en depuis l'onglet « Mesures » d'une fiche équipement." %}</td></tr>{% endfor %}
+      </tbody></table>
+    </section>
+  </div>
+  <div class="col-xl-5">
+    <section class="card-em">
+      <h2>{% translate "Dernières mesures" %}</h2>
+      {% for s in recent_sessions %}
+        <div class="d-flex justify-content-between gap-2 py-1 border-bottom"><a href="{{ s.get_absolute_url }}">{{ s.equipment.code }} · {{ s.get_kind_display }}</a><span class="muted small text-nowrap">{{ s.measured_at|date:"d/m/Y" }}</span></div>
+      {% empty %}<p class="muted mb-0">{% translate "Aucune mesure." %}</p>{% endfor %}
+    </section>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{{ request_obj.number }}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'workorders:request_list' %}">{% translate "Demandes d'intervention" %}</a> › {{ request_obj.number }}</div>
+<div class="page-head">
+  <div>
+    <h1>{{ request_obj.number }} · {{ request_obj.equipment.code }}</h1>
+    <div class="d-flex flex-wrap gap-2 mt-2">
+      <span class="badge-em {{ request_obj.status_badge }}">{{ request_obj.get_status_display }}</span>
+      <span class="badge-em {{ request_obj.priority_badge }}">{{ request_obj.get_priority_display }}</span>
+      {% if request_obj.production_stopped %}<span class="badge-em b-orange">{% translate "Production arrêtée" %}</span>{% endif %}
+    </div>
+  </div>
+</div>
+<div class="row g-3">
+  <div class="col-xl-7">
+    <section class="card-em">
+      <h2>{% translate "Demande" %}</h2>
+      <div class="kv mb-3">
+        <div><div class="k">{% translate "Équipement" %}</div><div class="v"><a href="{{ request_obj.equipment.get_absolute_url }}">{{ request_obj.equipment }}</a></div></div>
+        <div><div class="k">{% translate "Déclarée par" %}</div><div class="v">{{ request_obj.requested_by|default:"—" }}</div></div>
+        <div><div class="k">{% translate "Le" %}</div><div class="v mono">{{ request_obj.requested_at|date:"d/m/Y H:i" }}</div></div>
+      </div>
+      <div style="white-space:pre-line">{{ request_obj.description }}</div>
+      {% if request_obj.status != "new" %}
+        <div class="mt-3 pt-3 border-top small">
+          <span class="fw-semibold">{{ request_obj.get_status_display }}</span> {% translate "par" %} {{ request_obj.decided_by|default:"—" }} {% translate "le" %} {{ request_obj.decided_at|date:"d/m/Y H:i" }}{% if request_obj.decision_note %} : {{ request_obj.decision_note }}{% endif %}
+          {% if request_obj.work_order %}<div class="mt-1">{% translate "Ordre de travail" %} : <a href="{{ request_obj.work_order.get_absolute_url }}">{{ request_obj.work_order }}</a></div>{% endif %}
+        </div>
+      {% endif %}
+    </section>
+  </div>
+  {% if request_obj.status == "new" and user|can:"requests.manage" %}
+  <div class="col-xl-5 d-flex flex-column gap-3">
+    <form class="card-em" method="post" action="{% url 'workorders:request_decide' request_obj.pk 'accepter' %}">{% csrf_token %}
+      <h2>{% translate "Accepter et créer l'OT" %}</h2>
+      <div class="row">
+        <div class="col-6 mb-3"><label class="form-label" for="acc-kind">{% translate "Type" %}</label><select class="form-select" id="acc-kind" name="kind">{% for value, label in kinds %}<option value="{{ value }}"{% if value == "corrective" %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="col-6 mb-3"><label class="form-label" for="acc-prio">{% translate "Priorité" %}</label><select class="form-select" id="acc-prio" name="priority">{% for value, label in priorities %}<option value="{{ value }}"{% if value == request_obj.priority %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      </div>
+      <div class="mb-3"><label class="form-label" for="acc-note">{% translate "Commentaire (facultatif)" %}</label><input class="form-control" id="acc-note" name="note" maxlength="255"></div>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">{% translate "Accepter" %}</button></div>
+    </form>
+    <form class="card-em" method="post" action="{% url 'workorders:request_decide' request_obj.pk 'refuser' %}">{% csrf_token %}
+      <h2>{% translate "Refuser" %}</h2>
+      <div class="mb-3"><label class="form-label" for="rej-note">{% translate "Motif du refus" %} <span class="req">*</span></label><input class="form-control" id="rej-note" name="note" maxlength="255" required></div>
+      <div class="form-actions"><button class="btn btn-outline-secondary" type="submit">{% translate "Refuser la demande" %}</button></div>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

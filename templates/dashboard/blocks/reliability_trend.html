@@ -1,0 +1,5 @@
+{% load i18n %}<section class="card-em h-100">
+  <div class="d-flex justify-content-between align-items-center mb-2"><h2 class="mb-0">{% translate "Pannes et disponibilité · 12 mois" %}</h2><a class="small fw-semibold" href="{% url 'kpi:indicators' %}">{% translate "Indicateurs" %}</a></div>
+  <div class="chart-box" style="height:260px"><canvas data-dash="trend" aria-label="{% translate 'Pannes et disponibilité par mois' %}"></canvas></div>
+  {{ reliability_trend|json_script:"dash-trend" }}
+</section>

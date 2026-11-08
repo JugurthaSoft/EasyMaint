@@ -1,0 +1,41 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{{ session }}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'condition:session_list' %}">{% translate "Mesures" %}</a> › {{ session.equipment.code }}</div>
+<div class="page-head">
+  <div><h1>{{ session.get_kind_display }} · {{ session.equipment.code }}</h1><p class="sub">{{ session.measured_at|date:"d/m/Y H:i" }}{% if session.technician %} · {{ session.technician }}{% endif %}</p></div>
+  <a class="btn btn-outline-secondary" href="{{ session.equipment.get_absolute_url }}?onglet=mesures">{% translate "Fiche équipement" %}</a>
+</div>
+<div class="row g-3">
+  <div class="col-xl-8">
+    <div class="table-wrap">
+      <table class="table-em">
+        <thead><tr><th>{% translate "Point" %}</th><th>{% translate "Paramètre" %}</th><th class="num">{% translate "Valeur" %}</th><th>{% translate "Niveau" %}</th></tr></thead>
+        <tbody>
+        {% for m in measurements %}
+          <tr><td><a href="{{ m.point.get_absolute_url }}">{{ m.point.name }}</a></td><td>{{ m.parameter.name }}</td><td class="num">{{ m.value|number }} {{ m.parameter.unit }}</td><td><span class="badge-em {{ m.level_badge }}">{{ m.get_level_display }}</span></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-xl-4">
+    <section class="card-em">
+      <h2>{% translate "Contexte" %}</h2>
+      <div class="kv">
+        {% if session.source_import %}<div><div class="k">{% translate "Origine" %}</div><div class="v">{% if user|can:"imports.run" %}<a href="{{ session.source_import.get_absolute_url }}">{% translate "Import" %} · {{ session.source_import.original_name }}</a>{% else %}{% translate "Import" %} · {{ session.source_import.original_name }}{% endif %}</div></div>
+        {% elif session.source_api %}<div><div class="k">{% translate "Origine" %}</div><div class="v">{% translate "API (capteur ou logiciel)" %}{% if session.created_by %} · {{ session.created_by }}{% endif %}</div></div>{% endif %}
+        {% if session.rotation_speed %}<div><div class="k">{% translate "Vitesse de rotation" %}</div><div class="v mono">{{ session.rotation_speed|number }} {% translate "tr/min" %}</div></div>{% endif %}
+        {% if session.load_condition %}<div><div class="k">{% translate "Régime" %}</div><div class="v">{{ session.load_condition }}</div></div>{% endif %}
+        {% if session.oil_type %}<div><div class="k">{% translate "Type d'huile" %}</div><div class="v">{{ session.oil_type }}</div></div>{% endif %}
+        {% if session.operating_hours %}<div><div class="k">{% translate "Heures de fonctionnement" %}</div><div class="v mono">{{ session.operating_hours|number }} h</div></div>{% endif %}
+        {% if session.oil_hours %}<div><div class="k">{% translate "Heures de l'huile" %}</div><div class="v mono">{{ session.oil_hours|number }} h</div></div>{% endif %}
+        {% if session.laboratory %}<div><div class="k">{% translate "Laboratoire" %}</div><div class="v">{{ session.laboratory }}{% if session.lab_report_number %} · {{ session.lab_report_number }}{% endif %}</div></div>{% endif %}
+      </div>
+      {% if session.lab_conclusion %}<div class="mt-3"><div class="k muted small">{% translate "Conclusion du laboratoire" %}</div><div style="white-space:pre-line">{{ session.lab_conclusion }}</div></div>{% endif %}
+      {% if session.observations %}<div class="mt-3"><div class="k muted small">{% translate "Observations" %}</div><div style="white-space:pre-line">{{ session.observations }}</div></div>{% endif %}
+      {% for doc in attachments %}<div class="mt-3"><a href="{% url 'condition:session_attachment' doc.pk %}">{% icon "file" 16 %} {{ doc.display_name }}</a></div>{% endfor %}
+    </section>
+  </div>
+</div>
+{% endblock %}

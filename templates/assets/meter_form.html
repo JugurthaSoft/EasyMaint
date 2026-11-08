@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% translate "Nouveau compteur" %}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'assets:equipment_list' %}">{% translate "Équipements" %}</a> › <a href="{{ equipment.get_absolute_url }}?onglet=compteurs">{{ equipment.code }}</a> › {% translate "Nouveau compteur" %}</div>
+<div class="page-head"><div><h1>{% translate "Nouveau compteur" %}</h1><p class="sub">{{ equipment }}</p></div></div>
+<form method="post" novalidate class="card-em" style="max-width:560px">{% csrf_token %}
+  {% include "partials/_form.html" %}
+  <div class="form-actions">
+    <a class="btn btn-outline-secondary" href="{{ equipment.get_absolute_url }}?onglet=compteurs">{% translate "Annuler" %}</a>
+    <button class="btn btn-primary" type="submit">{% translate "Enregistrer" %}</button>
+  </div>
+</form>
+{% endblock %}

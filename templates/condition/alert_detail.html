@@ -1,0 +1,78 @@
+{% extends "base.html" %}{% load i18n easymaint static %}
+{% block title %}{% translate "Alerte" %} · {{ alert.point.equipment.code }}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'condition:alert_list' %}">{% translate "Alertes" %}</a> › {{ alert.point }}</div>
+<div class="page-head align-items-start">
+  <div>
+    <h1>{{ alert.parameter.name }} · {{ alert.point.name }}</h1>
+    <div class="d-flex flex-wrap gap-2 mt-2">
+      <span class="badge-em {{ alert.level_badge }}">{% if alert.back_to_normal %}{% translate "Revenue normale" %}{% else %}{{ alert.get_level_display }}{% endif %}</span>
+      <span class="badge-em b-gray">{{ alert.get_status_display }}</span>
+      {% if alert.max_level != alert.level %}<span class="badge-em b-gray">{% translate "niveau max." %} {{ alert.get_max_level_display|lower }}</span>{% endif %}
+    </div>
+  </div>
+</div>
+<div class="row g-3">
+  <div class="col-xl-8 d-flex flex-column gap-3">
+    <section class="card-em">
+      <h2>{% translate "Évolution" %}</h2>
+      {% if series.values %}
+        <div class="chart-sm"><canvas data-series="series-alert" role="img" aria-label="{% translate 'Évolution de la mesure' %}"></canvas></div>
+        {{ series|json_script:"series-alert" }}
+      {% endif %}
+    </section>
+    <section class="card-em">
+      <h2>{% translate "Dernières mesures" %}</h2>
+      <table class="table-em"><thead><tr><th>{% translate "Date" %}</th><th class="num">{% translate "Valeur" %}</th><th>{% translate "Niveau" %}</th></tr></thead><tbody>
+      {% for m in measurements %}<tr><td class="mono small">{{ m.measured_at|date:"d/m/Y H:i" }}</td><td class="num">{{ m.value|number }} {{ alert.parameter.unit }}</td><td><span class="badge-em {{ m.level_badge }}">{{ m.get_level_display }}</span></td></tr>{% endfor %}
+      </tbody></table>
+    </section>
+  </div>
+  <div class="col-xl-4 d-flex flex-column gap-3">
+    <section class="card-em">
+      <h2>{% translate "Situation" %}</h2>
+      <div class="kv">
+        <div><div class="k">{% translate "Équipement" %}</div><div class="v"><a href="{{ alert.point.equipment.get_absolute_url }}?onglet=mesures">{{ alert.point.equipment }}</a></div></div>
+        <div><div class="k">{% translate "Point" %}</div><div class="v"><a href="{{ alert.point.get_absolute_url }}">{{ alert.point.name }}</a></div></div>
+        <div><div class="k">{% translate "Ouverte le" %}</div><div class="v mono">{{ alert.opened_at|date:"d/m/Y H:i" }}</div></div>
+        {% if alert.last_measurement %}<div><div class="k">{% translate "Dernière valeur" %}</div><div class="v mono">{{ alert.last_measurement.value|number }} {{ alert.parameter.unit }}</div></div>{% endif %}
+        {% if alert.acknowledged_by %}<div><div class="k">{% translate "Acquittée par" %}</div><div class="v">{{ alert.acknowledged_by }} · {{ alert.acknowledged_at|date:"d/m/Y" }}</div></div>{% endif %}
+        {% if alert.closed_by %}<div><div class="k">{% translate "Close par" %}</div><div class="v">{{ alert.closed_by }} · {{ alert.closed_at|date:"d/m/Y" }}</div></div>{% endif %}
+        {% if alert.rule %}<div><div class="k">{% translate "Règle appliquée" %}</div><div class="v">{{ alert.rule }}</div></div>{% endif %}
+        {% if alert.work_order %}<div><div class="k">{% translate "OT" %}</div><div class="v"><a href="{{ alert.work_order.get_absolute_url }}">{{ alert.work_order.number }}</a> · {{ alert.work_order.get_status_display|lower }}</div></div>{% endif %}
+        {% if alert.work_request %}<div><div class="k">{% translate "Demande" %}</div><div class="v"><a href="{{ alert.work_request.get_absolute_url }}">{{ alert.work_request.number }}</a> · {{ alert.work_request.get_status_display|lower }}</div></div>{% endif %}
+      </div>
+      {% if alert.comment %}<div class="mt-3 small"><span class="fw-semibold">{% translate "Commentaire" %}</span> : {{ alert.comment }}</div>{% endif %}
+    </section>
+    {% if alert.status != "closed" %}
+    <section class="card-em">
+      <h2>{% translate "Actions" %}</h2>
+      {% if alert.status == "open" and user|can:"condition.record" %}
+        <form class="mb-3" method="post" action="{% url 'condition:alert_action' alert.pk 'acquitter' %}">{% csrf_token %}
+          <label class="form-label" for="ack-c">{% translate "Commentaire (facultatif)" %}</label>
+          <input class="form-control mb-2" id="ack-c" name="comment" maxlength="255">
+          <button class="btn btn-outline-secondary w-100" type="submit">{% translate "Acquitter" %}</button></form>
+      {% endif %}
+      {% if not alert.work_order and user|can:"workorders.manage" %}
+        <form class="mb-2" method="post" action="{% url 'condition:alert_action' alert.pk 'creer-ot' %}">{% csrf_token %}
+          <button class="btn btn-primary w-100" type="submit">{% translate "Créer un OT conditionnel" %}</button></form>
+      {% endif %}
+      {% if not alert.work_order and not alert.work_request and user|can:"requests.create" %}
+        <form class="mb-3" method="post" action="{% url 'condition:alert_action' alert.pk 'creer-di' %}">{% csrf_token %}
+          <button class="btn btn-outline-secondary w-100" type="submit">{% translate "Créer une demande d'intervention" %}</button></form>
+      {% endif %}
+      {% if user|can:"condition.manage" %}
+        <form method="post" action="{% url 'condition:alert_action' alert.pk 'clore' %}">{% csrf_token %}
+          <label class="form-label" for="close-c">{% translate "Traitement réalisé" %} <span class="req">*</span></label>
+          <input class="form-control mb-2" id="close-c" name="comment" maxlength="255" required>
+          <button class="btn btn-outline-secondary w-100" type="submit">{% translate "Clore l'alerte" %}</button></form>
+      {% endif %}
+    </section>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'vendor/chart.umd.min.js' %}"></script>
+<script src="{% static 'js/condition_charts.js' %}"></script>
+{% endblock %}

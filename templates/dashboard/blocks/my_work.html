@@ -1,0 +1,9 @@
+{% load i18n easymaint %}<section class="card-em h-100">
+  <div class="d-flex justify-content-between align-items-center mb-2"><h2 class="mb-0">{% translate "Mes interventions" %}</h2><a class="small fw-semibold" href="{% url 'workorders:my_work_orders' %}">{% translate "Tout voir" %}</a></div>
+  {% for o in my_orders %}
+    <div class="d-flex justify-content-between align-items-baseline gap-2 py-1 border-bottom">
+      <a href="{% url 'workorders:wo_execute' o.pk %}"><span class="mono">{{ o.number }}</span> · {{ o.equipment.code }} · {{ o.title|truncatechars:34 }}</a>
+      <span class="small text-nowrap{% if o.due_date and o.due_date < today %} text-danger{% endif %}">{{ o.get_status_display }}{% if o.due_date %} · {{ o.due_date|date:"d/m" }}{% endif %}</span>
+    </div>
+  {% empty %}<p class="muted mb-0">{% translate "Aucune intervention ouverte à votre nom." %}</p>{% endfor %}
+</section>

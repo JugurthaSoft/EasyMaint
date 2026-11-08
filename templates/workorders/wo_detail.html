@@ -1,0 +1,203 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{{ wo.number }}{% endblock %}
+{% block content %}
+{% with here=request.get_full_path %}
+<div class="breadcrumb-em"><a href="{% url 'workorders:wo_list' %}">{% translate "Ordres de travail" %}</a> › {{ wo.number }}</div>
+<div class="page-head align-items-start">
+  <div class="min-w-0">
+    <h1><span class="mono">{{ wo.number }}</span> · {{ wo.title }}</h1>
+    <div class="d-flex flex-wrap gap-2 mt-2">
+      <span class="badge-em {{ wo.kind_badge }}">{{ wo.get_kind_display }}</span>
+      <span class="badge-em {{ wo.priority_badge }}">{{ wo.get_priority_display }}</span>
+      <span class="badge-em {{ wo.status_badge }}">{{ wo.get_status_display }}</span>
+      {% if wo.is_late %}<span class="badge-em b-red">{% translate "En retard" %}</span>{% endif %}
+      {% if wo.production_stopped %}<span class="badge-em b-orange">{% translate "Arrêt de production" %}</span>{% endif %}
+    </div>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'workorders:wo_pdf' wo.pk %}" target="_blank" rel="noopener">{% icon "printer" %} {% translate "Fiche PDF" %}</a>
+    {% if can_execute and wo.is_open %}<a class="btn btn-outline-secondary" href="{% url 'workorders:wo_execute' wo.pk %}">{% translate "Écran intervention" %}</a>{% endif %}
+  </div>
+</div>
+<div class="mb-3">{% include "workorders/_wo_actions.html" %}</div>
+{% if wo.status in "waiting_parts,waiting_external" and wo.waiting_reason %}<div class="alert alert-warning">{% translate "Motif d'attente" %} : {{ wo.waiting_reason }}</div>{% endif %}
+{% if wo.status == "cancelled" %}<div class="alert alert-secondary">{% translate "Annulé" %} : {{ wo.cancel_reason }}</div>{% endif %}
+
+<div class="row g-3">
+  <div class="col-xl-8 d-flex flex-column gap-3">
+    <section class="card-em">
+      <h2>{% translate "Intervention" %}</h2>
+      <div class="kv">
+        <div><div class="k">{% translate "Équipement" %}</div><div class="v"><a href="{{ wo.equipment.get_absolute_url }}">{{ wo.equipment }}</a></div></div>
+        <div><div class="k">{% translate "Origine" %}</div><div class="v">{% if wo.request %}<a href="{{ wo.request.get_absolute_url }}">{{ wo.request.number }}</a>{% else %}{% translate "Création directe" %}{% endif %}</div></div>
+        <div><div class="k">{% translate "Date prévue · échéance" %}</div><div class="v mono">{{ wo.planned_date|date:"d/m/Y"|default:"—" }} · {{ wo.due_date|date:"d/m/Y"|default:"—" }}{% if wo.is_postponed %}<div class="muted small fw-normal">{% translate "reporté ; échéance d'origine" %} {{ wo.original_due_date|date:"d/m/Y" }}</div>{% endif %}</div></div>
+        {% if wo.preventive_plan %}<div><div class="k">{% translate "Plan préventif" %}</div><div class="v"><a href="{{ wo.preventive_plan.get_absolute_url }}">{{ wo.preventive_plan }}</a></div></div>{% endif %}
+        <div><div class="k">{% translate "Temps estimé" %}</div><div class="v mono">{% if wo.estimated_hours %}{{ wo.estimated_hours|number }} h{% else %}—{% endif %}</div></div>
+        <div><div class="k">{% translate "Intervenants" %}</div><div class="v">{% for t in wo.technicians.all %}{{ t }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}{% if wo.team %}<div class="muted small fw-normal">{% translate "Équipe" %} {{ wo.team }}</div>{% endif %}{% if wo.contractor %}<div class="muted small fw-normal">{% translate "Sous-traitant" %} : {{ wo.contractor }}</div>{% endif %}</div></div>
+        <div><div class="k">{% translate "Début · fin réels" %}</div><div class="v mono">{{ wo.started_at|date:"d/m/Y H:i"|default:"—" }} · {{ wo.finished_at|date:"d/m/Y H:i"|default:"—" }}</div></div>
+      </div>
+      {% if wo.description %}<div class="mt-3 pt-3 border-top" style="white-space:pre-line">{{ wo.description }}</div>{% endif %}
+    </section>
+
+    <section class="card-em">
+      <h2>{% translate "Compte rendu" %}</h2>
+      {% if editable %}
+        <form method="post" action="{% url 'workorders:wo_report' wo.pk %}" novalidate>{% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+          {% include "partials/_field.html" with field=report_form.diagnosis %}
+          <div class="row"><div class="col-md-6">{% include "partials/_field.html" with field=report_form.failure_mode %}</div><div class="col-md-6">{% include "partials/_field.html" with field=report_form.failure_cause %}</div></div>
+          {% include "partials/_field.html" with field=report_form.work_done %}
+          <div class="form-actions"><button class="btn btn-primary" type="submit">{% translate "Enregistrer le compte rendu" %}</button></div>
+        </form>
+      {% else %}
+        <div class="kv">
+          <div><div class="k">{% translate "Mode de défaillance" %}</div><div class="v">{{ wo.failure_mode|default:"—" }}</div></div>
+          <div><div class="k">{% translate "Cause" %}</div><div class="v">{{ wo.failure_cause|default:"—" }}</div></div>
+        </div>
+        <div class="mt-3"><div class="k muted small">{% translate "Diagnostic" %}</div><div style="white-space:pre-line">{{ wo.diagnosis|default:"—" }}</div></div>
+        <div class="mt-3"><div class="k muted small">{% translate "Travaux réalisés" %}</div><div style="white-space:pre-line">{{ wo.work_done|default:"—" }}</div></div>
+      {% endif %}
+    </section>
+
+    <section class="card-em">
+      <h2>{% translate "Check-list" %}</h2>
+      {% for item in checklist %}{% include "workorders/_checklist_item.html" %}{% empty %}<p class="muted">{% translate "Aucun point de contrôle." %}</p>{% endfor %}
+      {% if editable and can_manage %}
+        <form class="d-flex gap-2 mt-2" method="post" action="{% url 'workorders:wo_checklist_add' wo.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+          <input class="form-control" name="label" maxlength="255" required placeholder="{% translate 'Nouveau point de contrôle' %}" aria-label="{% translate 'Nouveau point de contrôle' %}">
+          <button class="btn btn-outline-secondary text-nowrap" type="submit">{% translate "Ajouter" %}</button></form>
+      {% endif %}
+    </section>
+
+    <section class="card-em">
+      <h2>{% translate "Temps passé" %}</h2>
+      <div class="table-responsive"><table class="table-em">
+        <thead><tr><th>{% translate "Technicien" %}</th><th>{% translate "Début" %}</th><th>{% translate "Fin" %}</th><th class="num">{% translate "Heures" %}</th><th class="num">{% translate "Coût" %}</th><th></th></tr></thead>
+        <tbody>
+        {% for entry in time_entries %}
+          <tr><td>{{ entry.technician }}{% if entry.is_overtime %} <span class="badge-em b-orange">{% translate "HS" %}</span>{% endif %}{% if entry.note %}<div class="muted small">{{ entry.note }}</div>{% endif %}</td>
+            <td class="mono small">{{ entry.started_at|date:"d/m/Y H:i" }}</td>
+            <td class="mono small">{% if entry.is_running %}<span class="badge-em b-blue">{% translate "en cours" %}</span>{% else %}{{ entry.ended_at|date:"d/m/Y H:i" }}{% endif %}</td>
+            <td class="num">{% if entry.is_running %}—{% else %}{{ entry.hours|number:2 }}{% endif %}</td>
+            <td class="num">{% if entry.is_running %}—{% else %}{{ entry.cost|money }}{% endif %}</td>
+            <td class="text-end">{% if editable and can_manage and not entry.is_running %}<form method="post" action="{% url 'workorders:wo_time_delete' wo.pk entry.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ here }}"><button class="btn btn-sm btn-link text-danger p-0" type="submit" data-confirm="{% translate 'Supprimer ce pointage ?' %}">{% translate "Supprimer" %}</button></form>{% endif %}</td></tr>
+        {% empty %}<tr><td colspan="6" class="empty-state">{% translate "Aucun temps pointé." %}</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+      {% if editable %}
+        <details class="mt-3"><summary class="fw-semibold">{% translate "Ajouter un temps manuellement" %}</summary>
+          <form class="row g-2 mt-1" method="post" action="{% url 'workorders:wo_time_add' wo.pk %}" novalidate>{% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+            <div class="col-md-4">{% include "partials/_field.html" with field=time_form.technician %}</div>
+            <div class="col-md-4">{% include "partials/_field.html" with field=time_form.started_at %}</div>
+            <div class="col-md-4">{% include "partials/_field.html" with field=time_form.ended_at %}</div>
+            <div class="col-md-8">{% include "partials/_field.html" with field=time_form.note %}</div>
+            <div class="col-md-4 pt-md-4">{% include "partials/_field.html" with field=time_form.is_overtime %}</div>
+            <div class="col-12 form-actions"><button class="btn btn-outline-secondary" type="submit">{% translate "Ajouter le temps" %}</button></div>
+          </form>
+        </details>
+      {% endif %}
+    </section>
+
+    {% if plan_parts %}
+    <section class="card-em">
+      <h2>{% translate "Pièces prévues par le plan" %}</h2>
+      {% for part in plan_parts %}<div class="d-flex justify-content-between py-1 border-bottom"><span><span class="mono small muted">{{ part.reference }}</span> {{ part.designation }}</span><span class="mono">{{ part.quantity|number }}</span></div>{% endfor %}
+      <p class="muted small mt-2 mb-0">{% translate "Pièces non stockées : reportez ci-dessous celles réellement utilisées." %}</p>
+    </section>
+    {% endif %}
+
+    {% if show_stock_parts %}{% include "inventory/_wo_parts.html" %}{% endif %}
+
+    <section class="card-em">
+      <h2>{% if show_stock_parts %}{% translate "Pièces hors magasin (achat direct, dépannage)" %}{% else %}{% translate "Pièces utilisées" %}{% endif %}</h2>
+      <div class="table-responsive"><table class="table-em">
+        <thead><tr><th>{% translate "Référence" %}</th><th>{% translate "Désignation" %}</th><th class="num">{% translate "Qté" %}</th><th class="num">{% translate "Coût unitaire" %}</th><th class="num">{% translate "Total" %}</th><th></th></tr></thead>
+        <tbody>
+        {% for part in parts %}
+          <tr><td class="mono small">{{ part.reference|default:"—" }}</td><td>{{ part.designation }}</td><td class="num">{{ part.quantity|number }}</td><td class="num">{{ part.unit_cost|money }}</td><td class="num">{{ part.cost|money }}</td>
+            <td class="text-end">{% if editable %}<form method="post" action="{% url 'workorders:wo_part_delete' wo.pk part.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ here }}"><button class="btn btn-sm btn-link text-danger p-0" type="submit">{% translate "Retirer" %}</button></form>{% endif %}</td></tr>
+        {% empty %}<tr><td colspan="6" class="empty-state">{% translate "Aucune pièce." %}</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+      {% if editable %}
+        <form class="row g-2 mt-2 align-items-end" method="post" action="{% url 'workorders:wo_part_add' wo.pk %}" novalidate>{% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+          <div class="col-md-2"><label class="form-label small" for="p-ref">{% translate "Référence" %}</label><input class="form-control" id="p-ref" name="reference" maxlength="60"></div>
+          <div class="col-md-5"><label class="form-label small" for="p-des">{% translate "Désignation" %}</label><input class="form-control" id="p-des" name="designation" maxlength="200" required></div>
+          <div class="col-md-2"><label class="form-label small" for="p-qty">{% translate "Qté" %}</label><input class="form-control" id="p-qty" name="quantity" type="number" step="0.001" min="0" value="1" required></div>
+          <div class="col-md-2"><label class="form-label small" for="p-cost">{% translate "Coût unit." %}</label><input class="form-control" id="p-cost" name="unit_cost" type="number" step="0.001" min="0" value="0"></div>
+          <div class="col-md-1"><button class="btn btn-outline-secondary w-100" type="submit" aria-label="{% translate 'Ajouter la pièce' %}">{% icon "plus" 16 %}</button></div>
+        </form>
+      {% endif %}
+    </section>
+
+    {% if can_manage or expenses %}
+    <section class="card-em">
+      <h2>{% translate "Prestations et autres dépenses" %}</h2>
+      <div class="table-responsive"><table class="table-em">
+        <thead><tr><th>{% translate "Nature" %}</th><th>{% translate "Libellé" %}</th><th>{% translate "Fournisseur" %}</th><th class="num">{% translate "Montant" %}</th><th></th></tr></thead>
+        <tbody>
+        {% for e in expenses %}
+          <tr><td>{{ e.get_nature_display }}</td><td>{{ e.label }}</td><td>{{ e.supplier|default:"—" }}</td><td class="num">{{ e.amount|money }}</td>
+            <td class="text-end">{% if editable and can_manage %}<form method="post" action="{% url 'workorders:wo_expense_delete' wo.pk e.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ here }}"><button class="btn btn-sm btn-link text-danger p-0" type="submit">{% translate "Retirer" %}</button></form>{% endif %}</td></tr>
+        {% empty %}<tr><td colspan="5" class="empty-state">{% translate "Aucune dépense." %}</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+      {% if editable and can_manage %}
+        <form class="row g-2 mt-2 align-items-end" method="post" action="{% url 'workorders:wo_expense_add' wo.pk %}" novalidate>{% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+          <div class="col-md-3"><label class="form-label small" for="id_nature">{% translate "Nature" %}</label>{{ expense_form.nature|bs }}</div>
+          <div class="col-md-4"><label class="form-label small" for="e-lab">{% translate "Libellé" %}</label><input class="form-control" id="e-lab" name="label" maxlength="200" required></div>
+          <div class="col-md-2"><label class="form-label small" for="e-sup">{% translate "Fournisseur" %}</label><input class="form-control" id="e-sup" name="supplier" maxlength="150"></div>
+          <div class="col-md-2"><label class="form-label small" for="e-amt">{% translate "Montant" %}</label><input class="form-control" id="e-amt" name="amount" type="number" step="0.001" min="0" required></div>
+          <div class="col-md-1"><button class="btn btn-outline-secondary w-100" type="submit" aria-label="{% translate 'Ajouter la dépense' %}">{% icon "plus" 16 %}</button></div>
+        </form>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    <section class="card-em">
+      <h2>{% translate "Photos et documents" %}</h2>
+      {% include "workorders/_attachments.html" %}
+    </section>
+  </div>
+
+  <div class="col-xl-4 d-flex flex-column gap-3">
+    {% if missing and can_execute %}
+      <div class="missing-box"><div class="fw-bold mb-1">{% translate "Pour terminer l'OT" %}</div>{% for m in missing %}<div>• {{ m }}</div>{% endfor %}</div>
+    {% endif %}
+    {% if can_execute and wo.status in "in_progress,waiting_parts,waiting_external" %}
+      <form method="post" action="{% url 'workorders:wo_action' wo.pk 'finish' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+        <button class="btn btn-primary btn-xl" type="submit">{% translate "Terminer l'intervention" %}</button></form>
+    {% endif %}
+    <section class="card-em">
+      <h2>{% if wo.status == "validated" %}{% translate "Coûts figés" %}{% else %}{% translate "Coûts (provisoires)" %}{% endif %}</h2>
+      {% if wo.status == "validated" %}
+        <div class="cost-row"><span>{% translate "Main-d'œuvre" %}</span><span class="mono">{{ wo.labour_cost|money }}</span></div>
+        <div class="cost-row"><span>{% translate "Pièces" %}</span><span class="mono">{{ wo.parts_cost|money }}</span></div>
+        <div class="cost-row"><span>{% translate "Prestations externes" %}</span><span class="mono">{{ wo.external_cost|money }}</span></div>
+        <div class="cost-row"><span>{% translate "Autres dépenses" %}</span><span class="mono">{{ wo.other_cost|money }}</span></div>
+        <div class="cost-row total"><span>{% translate "Total" %}</span><span class="mono">{{ wo.total_cost|money }}</span></div>
+        <p class="muted small mt-2 mb-0">{% translate "Validé par" %} {{ wo.validated_by|default:"—" }} {% translate "le" %} {{ wo.validated_at|date:"d/m/Y H:i" }}</p>
+      {% else %}
+        <div class="cost-row"><span>{% translate "Main-d'œuvre" %}</span><span class="mono">{{ costs.labour|money }}</span></div>
+        <div class="cost-row"><span>{% translate "Pièces" %}</span><span class="mono">{{ costs.parts|money }}</span></div>
+        <div class="cost-row"><span>{% translate "Prestations externes" %}</span><span class="mono">{{ costs.external|money }}</span></div>
+        <div class="cost-row"><span>{% translate "Autres dépenses" %}</span><span class="mono">{{ costs.other|money }}</span></div>
+        <div class="cost-row total"><span>{% translate "Total" %}</span><span class="mono">{{ costs.total|money }}</span></div>
+        <p class="muted small mt-2 mb-0">{% translate "Les coûts sont figés à la validation." %}</p>
+      {% endif %}
+    </section>
+    <section class="card-em">
+      <h2>{% translate "Arrêts machine" %}</h2>
+      {% for d in downtimes %}
+        <div class="timeline-item"><span class="when">{{ d.started_at|date:"d/m H:i" }} → {% if d.ended_at %}{{ d.ended_at|date:"d/m H:i" }}{% else %}…{% endif %}</span><span>{{ d.duration_hours|number:2 }} h{% if not d.ended_at %} <span class="badge-em b-red">{% translate "en cours" %}</span>{% endif %}</span></div>
+      {% empty %}<p class="muted mb-0">{% translate "Aucun arrêt enregistré." %}</p>{% endfor %}
+    </section>
+    <section class="card-em">
+      <h2>{% translate "Historique" %}</h2>
+      {% for log in status_logs %}
+        <div class="timeline-item"><span class="when">{{ log.at|date:"d/m H:i" }}</span><span><span class="fw-semibold">{{ log.to_label }}</span> · {{ log.user|default:"—" }}{% if log.comment %}<div class="muted">{{ log.comment }}</div>{% endif %}</span></div>
+      {% endfor %}
+    </section>
+  </div>
+</div>
+{% endwith %}
+{% endblock %}

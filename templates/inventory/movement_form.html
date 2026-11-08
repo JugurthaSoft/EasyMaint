@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% load i18n easymaint inventory_tags %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'inventory:item_list' %}">{% translate "Magasin" %}</a> › {{ page_title }}</div>
+<div class="page-head"><div><h1>{{ page_title }}</h1></div></div>
+<div class="pills mb-3">{% for key, value in kinds %}<a class="pill{% if key == kind %} active{% endif %}" href="{% url 'inventory:movement_create' key %}">{{ value.1 }}</a>{% endfor %}</div>
+{% items_datalist %}
+<form method="post" novalidate class="card-em" style="max-width:640px">{% csrf_token %}
+  {% include "partials/_form.html" %}
+  {% if kind == "entree" %}<p class="small muted">{% translate "Le coût moyen pondéré de l'article est recalculé avec ce coût d'entrée." %}</p>{% endif %}
+  {% if kind == "sortie" or kind == "transfert" %}<p class="small muted">{% translate "Les quantités réservées pour des OT ne peuvent pas être sorties ni transférées." %}</p>{% endif %}
+  <div class="form-actions">
+    <a class="btn btn-outline-secondary" href="{% url 'inventory:item_list' %}">{% translate "Annuler" %}</a>
+    <button class="btn btn-outline-primary" type="submit" name="again" value="1">{% translate "Enregistrer et saisir un autre" %}</button>
+    <button class="btn btn-primary" type="submit">{% translate "Enregistrer" %}</button>
+  </div>
+</form>
+{% endblock %}

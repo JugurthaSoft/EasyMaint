@@ -1,0 +1,24 @@
+{% load i18n easymaint %}
+<p class="muted small mb-2" aria-live="polite">{% blocktranslate count n=paginator.count %}{{ n }} ordre de travail{% plural %}{{ n }} ordres de travail{% endblocktranslate %}</p>
+<div class="table-wrap">
+  <table class="table-em">
+    <thead><tr><th>{% translate "N° OT" %}</th><th>{% translate "Type" %}</th><th>{% translate "Équipement" %}</th><th>{% translate "Intitulé" %}</th><th>{% translate "Priorité" %}</th><th>{% translate "Statut" %}</th><th>{% translate "Échéance" %}</th><th>{% translate "Affecté à" %}</th></tr></thead>
+    <tbody>
+    {% for wo in work_orders %}
+      <tr>
+        <td class="text-nowrap"><a class="fw-semibold mono" href="{{ wo.get_absolute_url }}">{{ wo.number }}</a></td>
+        <td><span class="badge-em {{ wo.kind_badge }}">{{ wo.get_kind_display }}</span></td>
+        <td class="text-nowrap"><a href="{{ wo.equipment.get_absolute_url }}" class="fw-semibold">{{ wo.equipment.code }}</a><div class="muted small">{{ wo.equipment.designation|truncatechars:30 }}</div></td>
+        <td style="min-width:220px">{{ wo.title }}</td>
+        <td><span class="badge-em {{ wo.priority_badge }}">P{{ wo.priority }}</span></td>
+        <td><span class="badge-em {{ wo.status_badge }}">{{ wo.get_status_display }}</span></td>
+        <td class="mono text-nowrap{% if wo.is_late %} text-danger fw-semibold{% endif %}">{{ wo.due_date|date:"d/m/Y"|default:"—" }}{% if wo.is_late %}<div class="small fw-normal">{% translate "en retard" %}</div>{% endif %}</td>
+        <td class="small">{% for t in wo.technicians.all %}{{ t.short_name }}{% if not forloop.last %}, {% endif %}{% empty %}{% if wo.team %}{{ wo.team }}{% elif wo.contractor %}{{ wo.contractor }}{% else %}—{% endif %}{% endfor %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="8" class="empty-state">{% translate "Aucun ordre de travail ne correspond à ces filtres." %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "partials/_pagination.html" with extra_query=filter_query hx_target="wo-results" %}

@@ -1,0 +1,86 @@
+# EasyMaint — installation locale (Linux recommandé, ou Windows avec Docker Desktop)
+#   docker compose up -d --build
+# L'application est alors disponible sur http://<adresse-du-serveur>:8000
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-easymaint}
+      POSTGRES_USER: ${POSTGRES_USER:-easymaint}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Définir POSTGRES_PASSWORD dans .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-easymaint} -d ${POSTGRES_DB:-easymaint}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  web:
+    image: easymaint-web:latest
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        REQUIREMENTS: ${EASYMAINT_REQUIREMENTS:-base}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${EASYMAINT_PORT:-8000}:8000"
+    volumes:
+      - media:/app/media
+      # lecture seule : la page « Sauvegardes » affiche l'état des sauvegardes automatiques
+      - ./sauvegardes:/app/sauvegardes:ro
+
+  # Tâches planifiées : génération quotidienne des OT préventifs (même image que l'application).
+  scheduler:
+    image: easymaint-web:latest
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        REQUIREMENTS: ${EASYMAINT_REQUIREMENTS:-base}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+    entrypoint: ["python", "manage.py"]
+    command: ["run_scheduler"]
+    depends_on:
+      db:
+        condition: service_healthy
+      web:
+        condition: service_started
+    volumes:
+      - media:/app/media
+
+  # Sauvegarde automatique chaque nuit (base + fichiers) dans le dossier « sauvegardes », avec rotation.
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER:-easymaint}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Définir POSTGRES_PASSWORD dans .env}
+      PGDATABASE: ${POSTGRES_DB:-easymaint}
+      TZ: ${EASYMAINT_TIME_ZONE:-Africa/Tunis}
+      BACKUP_HOUR: ${EASYMAINT_BACKUP_HOUR:-1}
+      BACKUP_KEEP_DAYS: ${EASYMAINT_BACKUP_KEEP_DAYS:-14}
+    entrypoint: ["sh", "/scripts/backup_daemon.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./scripts:/scripts:ro
+      - media:/media:ro
+      - ./sauvegardes:/sauvegardes
+
+volumes:
+  pgdata:
+  media:

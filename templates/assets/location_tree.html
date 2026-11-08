@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Localisations" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% translate "Localisations" %}</h1><p class="sub">{% translate "Usines, unités, lignes et zones. Le chiffre indique le nombre d'équipements, sous-niveaux compris." %}</p></div>
+  {% if user|can:"assets.manage" %}<a class="btn btn-primary" href="{% url 'assets:location_create' %}">{% icon "plus" %} {% translate "Nouvelle localisation" %}</a>{% endif %}
+</div>
+<section class="card-em">
+  {% if tree %}
+    <ul class="tree">
+      {% for node in tree %}{% include "assets/_location_node.html" with node=node %}{% endfor %}
+    </ul>
+  {% else %}
+    <div class="empty-state">{% translate "Aucune localisation. Commencez par créer votre usine." %}</div>
+  {% endif %}
+</section>
+{% endblock %}

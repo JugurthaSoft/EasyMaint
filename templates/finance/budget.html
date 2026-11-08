@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% load i18n easymaint static %}
+{% block title %}{% translate "Budget de maintenance" %} {{ year }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% translate "Coûts et budget" %}</h1><p class="sub">{% translate "Budget annuel par unité, réparti par mois, comparé aux dépenses réelles." %}</p></div>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <form method="get" class="d-flex gap-2"><label class="visually-hidden" for="b-year">{% translate "Année" %}</label><select class="form-select" id="b-year" name="annee" data-autosubmit>{% for y in years %}<option value="{{ y }}"{% if y == year %} selected{% endif %}>{{ y }}</option>{% endfor %}</select></form>
+    <a class="btn btn-outline-secondary" href="{% url 'finance:budget_pdf' %}?annee={{ year }}" target="_blank" rel="noopener">{% icon "printer" %} {% translate "Rapport PDF" %}</a>
+  </div>
+</div>
+{% include "finance/_nav.html" with section="budget" %}
+<section class="tiles mb-3">
+  <div class="tile"><span class="lbl">{% blocktranslate %}Budget {{ year }}{% endblocktranslate %}</span><span class="val">{{ total.planned_total|money }}</span></div>
+  <div class="tile"><span class="lbl">{% translate "Dépensé" %}</span><span class="val{% if total.rate and total.rate > 100 %} val-red{% endif %}">{{ total.actual_total|money }}</span><span class="sub">{% if total.rate is not None %}{{ total.rate|number:0 }} % {% translate "du budget" %}{% endif %}</span></div>
+  <div class="tile"><span class="lbl">{% translate "Reste" %}</span><span class="val{% if total.gap < 0 %} val-red{% endif %}">{{ total.gap|money }}</span></div>
+</section>
+<section class="card-em"><h2>{% translate "Budget et réel cumulés par mois" %}</h2>
+  <div class="chart-box" style="height:280px"><canvas data-budget="budget-chart" aria-label="{% translate 'Budget et réel par mois' %}"></canvas></div>{{ chart|json_script:"budget-chart" }}
+</section>
+<div class="table-wrap">
+  <table class="table-em small">
+    <thead><tr><th>{% translate "Unité" %}</th><th></th>{% for m in months %}<th class="num">{{ m }}</th>{% endfor %}<th class="num">{% translate "Année" %}</th><th class="num">{% translate "Taux" %}</th><th></th></tr></thead>
+    <tbody>
+    {% for row in rows %}
+      <tr><td rowspan="2" class="fw-semibold">{{ row.label }}</td><td class="muted">{% translate "Budget" %}</td>{% for v in row.planned %}<td class="num">{{ v|number:0 }}</td>{% endfor %}<td class="num fw-semibold">{{ row.planned_total|number:0 }}</td>
+        <td rowspan="2" class="num{% if row.rate and row.rate > 100 %} text-danger fw-semibold{% endif %}">{% if row.rate is not None %}{{ row.rate|number:0 }} %{% else %}—{% endif %}</td>
+        <td rowspan="2">{% if row.unit and user|can:"costs.manage" %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'finance:budget_edit' year row.unit.pk %}">{% if row.budget %}{% translate "Modifier" %}{% else %}{% translate "Définir" %}{% endif %}</a>{% endif %}</td></tr>
+      <tr><td class="muted">{% translate "Réel" %}</td>{% for m, p, a in row.months %}<td class="num{% if p and a > p %} text-danger{% endif %}">{{ a|number:0 }}</td>{% endfor %}<td class="num fw-semibold">{{ row.actual_total|number:0 }}</td></tr>
+    {% empty %}<tr><td colspan="17" class="empty-state">{% translate "Aucune unité définie : créez les unités dans Localisations." %}</td></tr>{% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="fw-semibold"><td rowspan="2">{% translate "Total" %}</td><td>{% translate "Budget" %}</td>{% for v in total.planned %}<td class="num">{{ v|number:0 }}</td>{% endfor %}<td class="num">{{ total.planned_total|number:0 }}</td><td rowspan="2" class="num">{% if total.rate is not None %}{{ total.rate|number:0 }} %{% else %}—{% endif %}</td><td rowspan="2"></td></tr>
+      <tr class="fw-semibold"><td>{% translate "Réel" %}</td>{% for v in total.actual %}<td class="num">{{ v|number:0 }}</td>{% endfor %}<td class="num">{{ total.actual_total|number:0 }}</td></tr>
+    </tfoot>
+  </table>
+</div>
+<p class="small muted mt-2">{% translate "Montants arrondis à l'unité. En rouge : mois dont la dépense dépasse le budget." %} {{ definition }}</p>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'vendor/chart.umd.min.js' %}"></script>
+<script src="{% static 'js/finance_charts.js' %}"></script>
+{% endblock %}

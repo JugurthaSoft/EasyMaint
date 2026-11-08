@@ -1,0 +1,88 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Planning" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% translate "Planning" %}</h1><p class="sub">{{ title }} · {% blocktranslate count n=count %}{{ n }} OT{% plural %}{{ n }} OT{% endblocktranslate %}{% if forecast_count %} · {% blocktranslate count n=forecast_count %}{{ n }} prévision{% plural %}{{ n }} prévisions{% endblocktranslate %}{% endif %}</p></div>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <a class="btn btn-outline-secondary" href="?vue={{ mode }}&amp;date={{ previous|date:'Y-m-d' }}&amp;{{ extra }}" aria-label="{% translate 'Période précédente' %}">‹</a>
+    <a class="btn btn-outline-secondary" href="?vue={{ mode }}&amp;date={{ today|date:'Y-m-d' }}&amp;{{ extra }}">{% translate "Aujourd'hui" %}</a>
+    <a class="btn btn-outline-secondary" href="?vue={{ mode }}&amp;date={{ following|date:'Y-m-d' }}&amp;{{ extra }}" aria-label="{% translate 'Période suivante' %}">›</a>
+    <div class="pills ms-2" role="group" aria-label="{% translate 'Vue' %}">
+      {% for key, label in views %}<a class="pill{% if mode == key %} active{% endif %}" href="?vue={{ key }}&amp;date={{ current|date:'Y-m-d' }}&amp;{{ extra }}">{{ label }}</a>{% endfor %}
+    </div>
+  </div>
+</div>
+
+<form class="d-flex flex-wrap gap-2 mb-3" method="get">
+  <input type="hidden" name="vue" value="{{ mode }}"><input type="hidden" name="date" value="{{ current|date:'Y-m-d' }}">
+  <select class="form-select" style="max-width:240px" name="equipe" aria-label="{% translate 'Équipe' %}" data-autosubmit>
+    <option value="">{% translate "Toutes les équipes" %}</option>
+    {% for t in teams %}<option value="{{ t.pk }}"{% if team == t.pk %} selected{% endif %}>{{ t.name }}</option>{% endfor %}
+  </select>
+  <select class="form-select" style="max-width:240px" name="technicien" aria-label="{% translate 'Technicien' %}" data-autosubmit>
+    <option value="">{% translate "Tous les techniciens" %}</option>
+    {% for t in technicians %}<option value="{{ t.pk }}"{% if technician == t.pk %} selected{% endif %}>{{ t }}</option>{% endfor %}
+  </select>
+  <noscript><button class="btn btn-outline-secondary" type="submit">{% translate "Filtrer" %}</button></noscript>
+</form>
+
+<div class="d-flex flex-wrap gap-3 small mb-2 muted" aria-hidden="true">
+  <span><span class="plan-chip corrective d-inline-block" style="width:14px;padding:0">&nbsp;</span> {% translate "Correctif" %}</span>
+  <span><span class="plan-chip preventive d-inline-block" style="width:14px;padding:0">&nbsp;</span> {% translate "Préventif" %}</span>
+  <span><span class="plan-chip conditional d-inline-block" style="width:14px;padding:0">&nbsp;</span> {% translate "Conditionnel" %}</span>
+  <span><span class="plan-chip late d-inline-block" style="width:14px;padding:0">&nbsp;</span> {% translate "En retard" %}</span>
+  <span><span class="plan-chip done d-inline-block" style="width:14px;padding:0">&nbsp;</span> {% translate "Réalisé" %}</span>
+  <span><span class="plan-chip forecast d-inline-block" style="width:14px;padding:0">&nbsp;</span> {% translate "Prévision (plan)" %}</span>
+</div>
+
+{% if mode == "mois" %}
+  <div class="table-wrap">
+    <table class="planning-month">
+      <thead><tr>{% for d in weekdays %}<th scope="col">{{ d }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for week in weeks %}
+        <tr>{% for day in week %}
+          <td class="{% if day.outside %}outside{% endif %}{% if day.is_today %} today{% endif %}">
+            <a class="day-num" href="?vue=jour&amp;date={{ day.date|date:'Y-m-d' }}&amp;{{ extra }}">{{ day.date|date:"j" }}</a>
+            {% for item in day.items|slice:":4" %}{% include "preventive/_planning_item.html" %}{% endfor %}
+            {% if day.items|length > 4 %}<a class="small" href="?vue=jour&amp;date={{ day.date|date:'Y-m-d' }}&amp;{{ extra }}">+ {{ day.items|length|add:"-4" }} {% translate "autre(s)" %}</a>{% endif %}
+          </td>
+        {% endfor %}</tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% elif mode == "semaine" %}
+  <div class="planning-week">
+    {% for day in days %}
+      <section class="card-em p-2{% if day.is_today %} today{% endif %}">
+        <h2 class="fs-6 mb-2 d-flex justify-content-between"><a href="?vue=jour&amp;date={{ day.date|date:'Y-m-d' }}&amp;{{ extra }}" class="text-body">{{ day.label }} {{ day.date|date:"d/m" }}</a>{% if day.estimated_hours %}<span class="muted small fw-normal">{{ day.estimated_hours|number }} h</span>{% endif %}</h2>
+        {% for item in day.items %}{% include "preventive/_planning_item.html" %}{% empty %}<p class="muted small mb-0">—</p>{% endfor %}
+      </section>
+    {% endfor %}
+  </div>
+{% else %}
+  {% for day in days %}
+    <section class="card-em">
+      <h2>{{ day.label }} {{ day.date|date:"d/m/Y" }}{% if day.estimated_hours %} · <span class="muted fw-normal">{{ day.estimated_hours|number }} h {% translate "estimées" %}</span>{% endif %}</h2>
+      {% for item in day.items %}
+        <div class="d-flex flex-wrap align-items-center gap-2 py-2 border-bottom">
+          {% if item.kind == "order" %}
+            <a class="mono fw-semibold" href="{{ item.wo.get_absolute_url }}">{{ item.wo.number }}</a>
+            <span class="badge-em {{ item.wo.kind_badge }}">{{ item.wo.get_kind_display }}</span>
+            <span class="flex-grow-1">{{ item.label }}</span>
+            <span class="small muted">{% for t in item.wo.technicians.all %}{{ t.short_name }}{% if not forloop.last %}, {% endif %}{% empty %}{{ item.wo.team|default:"" }}{% endfor %}</span>
+            <span class="badge-em {% if item.css == 'late' %}b-red{% else %}{{ item.wo.status_badge }}{% endif %}">{% if item.css == "late" %}{% translate "En retard" %}{% else %}{{ item.wo.get_status_display }}{% endif %}</span>
+          {% else %}
+            <a class="mono fw-semibold" href="{{ item.plan.get_absolute_url }}">{{ item.plan.code }}</a>
+            <span class="badge-em b-gray">{% translate "Prévision" %}</span>
+            <span class="flex-grow-1">{{ item.label }}</span>
+          {% endif %}
+        </div>
+      {% empty %}
+        <p class="muted mb-0">{% translate "Rien de prévu ce jour." %}</p>
+      {% endfor %}
+    </section>
+  {% endfor %}
+{% endif %}
+{% endblock %}

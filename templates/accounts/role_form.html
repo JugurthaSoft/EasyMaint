@@ -1,0 +1,31 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% if role %}{{ role.name }}{% else %}{% translate "Nouveau rôle" %}{% endif %}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'accounts:role_list' %}">{% translate "Rôles et droits" %}</a> › {% if role %}{{ role.name }}{% else %}{% translate "Nouveau" %}{% endif %}</div>
+<div class="page-head"><div><h1>{% if role %}{{ role.name }}{% else %}{% translate "Nouveau rôle" %}{% endif %}</h1></div></div>
+<form method="post" novalidate>{% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+  <div class="card-em mb-3" style="max-width:520px">{% include "partials/_field.html" with field=form.name %}</div>
+  {% for error in form.capabilities.errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+  <div class="row g-3">
+    {% for group, items in form.capability_groups %}
+      <div class="col-md-6 col-xl-4">
+        <fieldset class="card-em h-100">
+          <legend class="card-title-em fs-6 fw-semibold">{{ group }}</legend>
+          {% for code, label, checked in items %}
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" name="capabilities" value="{{ code }}" id="cap-{{ code }}"{% if checked %} checked{% endif %}>
+              <label class="form-check-label" for="cap-{{ code }}">{{ label }}</label>
+            </div>
+          {% endfor %}
+        </fieldset>
+      </div>
+    {% endfor %}
+  </div>
+  <p class="muted small mt-3">{% translate "Les droits des modules interventions, préventif, stock et pilotage prendront effet à la livraison de ces modules." %}</p>
+  <div class="form-actions">
+    <a class="btn btn-outline-secondary" href="{% url 'accounts:role_list' %}">{% translate "Annuler" %}</a>
+    <button class="btn btn-primary" type="submit">{% translate "Enregistrer" %}</button>
+  </div>
+</form>
+{% endblock %}

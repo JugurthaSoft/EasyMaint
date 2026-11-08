@@ -1,0 +1,55 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Imports de mesures" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% translate "Maintenance conditionnelle" %}</h1><p class="sub">{% translate "Import de mesures depuis un fichier CSV ou Excel (appareils de mesure, collecteurs, laboratoires)." %}</p></div>
+  <a class="btn btn-outline-secondary" href="{% url 'condition:import_template' %}">{% icon "download" %} {% translate "Télécharger le modèle Excel" %}</a>
+</div>
+{% include "condition/_nav.html" with section="imports" %}
+<div class="row g-3">
+  <div class="col-xl-5">
+    <form method="post" enctype="multipart/form-data" novalidate class="card-em">{% csrf_token %}
+      <h2>{% translate "Nouvel import" %}</h2>
+      {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+      {% include "partials/_field.html" with field=form.file %}
+      {% include "partials/_field.html" with field=form.profile %}
+      <p class="small muted">{% blocktranslate %}CSV (séparateur ; , ou tabulation, UTF-8 ou Windows) ou Excel .xlsx, {{ max_rows }} lignes au plus. Rien n'est enregistré avant votre confirmation : l'étape suivante affiche un aperçu et les erreurs ligne par ligne.{% endblocktranslate %}</p>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">{% translate "Lire le fichier" %}</button></div>
+    </form>
+    {% if profiles %}
+    <section class="card-em mt-3">
+      <h2>{% translate "Formats mémorisés" %}</h2>
+      <ul class="list-unstyled mb-0">
+      {% for p in profiles %}
+        <li class="d-flex justify-content-between align-items-center py-1 border-bottom">
+          <span>{{ p.name }} <span class="small muted">· {{ p.mapping.columns|length }} {% translate "champs" %}{% if p.mapping.values %}, {{ p.mapping.values|length }} {% translate "colonnes de valeurs" %}{% endif %}</span></span>
+          <form method="post" action="{% url 'condition:profile_delete' p.pk %}">{% csrf_token %}<button class="btn btn-sm btn-link text-danger" type="submit">{% translate "Supprimer" %}</button></form>
+        </li>
+      {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  </div>
+  <div class="col-xl-7">
+    <div class="table-wrap">
+      <table class="table-em">
+        <thead><tr><th>{% translate "Date" %}</th><th>{% translate "Fichier" %}</th><th>{% translate "Statut" %}</th><th class="num">{% translate "Importées" %}</th><th class="num">{% translate "Doublons" %}</th><th class="num">{% translate "Refusées" %}</th><th>{% translate "Par" %}</th></tr></thead>
+        <tbody>
+        {% for i in imports %}
+          <tr>
+            <td class="mono text-nowrap">{{ i.created_at|date:"d/m/Y H:i" }}</td>
+            <td><a href="{{ i.get_absolute_url }}">{{ i.original_name|truncatechars:40 }}</a>{% if i.profile %}<div class="small muted">{{ i.profile }}</div>{% endif %}</td>
+            <td><span class="badge-em {% if i.status == 'done' %}b-green{% elif i.status == 'draft' %}b-blue{% else %}b-gray{% endif %}">{{ i.get_status_display }}</span></td>
+            <td class="num">{% if i.status == 'done' %}{{ i.imported }}{% else %}—{% endif %}</td>
+            <td class="num">{{ i.skipped }}</td>
+            <td class="num">{{ i.rejected }}</td>
+            <td class="small">{{ i.created_by|default:"—" }}</td>
+          </tr>
+        {% empty %}<tr><td colspan="7" class="empty-state">{% translate "Aucun import pour l'instant." %}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include "partials/_pagination.html" %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% load i18n easymaint %}
+<div class="d-flex flex-wrap gap-3 mb-3">
+  {% for doc in attachments %}
+    <a class="text-center small" href="{% url 'workorders:wo_attachment_file' doc.pk %}" style="width:96px">
+      {% if doc.category == "photo_before" or doc.category == "photo_after" or doc.category == "photo" %}
+        <img class="photo-thumb" src="{% url 'workorders:wo_attachment_file' doc.pk %}" alt="{{ doc.get_category_display }}">
+      {% else %}
+        <span class="photo-thumb d-inline-flex align-items-center justify-content-center">{% icon "file" 28 %}</span>
+      {% endif %}
+      <span class="d-block text-truncate">{{ doc.get_category_display }}</span>
+    </a>
+  {% empty %}
+    <p class="muted mb-0">{% translate "Aucun fichier." %}</p>
+  {% endfor %}
+</div>
+{% if editable %}
+  <form class="d-flex flex-wrap gap-2 align-items-end" method="post" enctype="multipart/form-data" action="{% url 'workorders:wo_attachment_upload' wo.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <div><label class="form-label small" for="att-cat-{{ wo.pk }}">{% translate "Type" %}</label>
+      <select class="form-select" id="att-cat-{{ wo.pk }}" name="category">{% for value, label in photo_categories %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+    <div class="flex-grow-1"><label class="form-label small" for="att-file-{{ wo.pk }}">{% translate "Fichier ou photo" %}</label>
+      <input class="form-control" id="att-file-{{ wo.pk }}" type="file" name="file" accept="image/*,application/pdf" required></div>
+    <input type="hidden" name="title" value="">
+    <button class="btn btn-outline-secondary" type="submit">{% icon "upload" %} {% translate "Envoyer" %}</button>
+  </form>
+{% endif %}

@@ -1,0 +1,22 @@
+{% load i18n easymaint %}
+<div class="table-wrap">
+  <table class="table-em">
+    <thead><tr><th>{% translate "Référence" %}</th><th>{% translate "Désignation" %}</th><th>{% translate "Famille" %}</th><th class="num">{% translate "Physique" %}</th><th class="num">{% translate "Réservé" %}</th><th class="num">{% translate "Disponible" %}</th><th class="num">{% translate "Mini" %}</th><th class="num">{% translate "CMP" %}</th><th class="num">{% translate "Valeur" %}</th></tr></thead>
+    <tbody>
+    {% for i in items %}
+      <tr>
+        <td class="mono"><a href="{{ i.get_absolute_url }}">{{ i.reference }}</a></td>
+        <td>{{ i.designation }}{% if i.is_critical %} <span class="badge-em b-red">{% translate "critique" %}</span>{% endif %}</td>
+        <td class="small">{{ i.family|default:"—" }}</td>
+        <td class="num">{{ i.physical|number }}</td>
+        <td class="num">{% if i.reserved %}{{ i.reserved|number }}{% else %}—{% endif %}</td>
+        <td class="num"><span class="{% if i.below_min %}text-danger fw-semibold{% endif %}">{{ i.available|number }}</span> <span class="muted small">{{ i.get_unit_display }}</span></td>
+        <td class="num">{{ i.min_stock|number }}</td>
+        <td class="num">{{ i.average_cost|money }}</td>
+        <td class="num">{{ i.stock_value|money }}</td>
+      </tr>
+    {% empty %}<tr><td colspan="9" class="empty-state">{% translate "Aucun article." %}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "partials/_pagination.html" with extra_query=filter_query hx_target="item-results" %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% translate "Alertes conditionnelles" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% translate "Maintenance conditionnelle" %}</h1><p class="sub">{% translate "Une alerte par point et paramètre : les mesures suivantes la mettent à jour jusqu'à sa clôture." %}</p></div></div>
+{% include "condition/_nav.html" with section="alerts" %}
+<div class="pills mb-3">
+  {% for value, label in statuses %}<a class="pill{% if current_status == value %} active{% endif %}" href="?statut={{ value }}">{{ label }}</a>{% endfor %}
+</div>
+{% include "condition/_alerts_table.html" with alerts=alerts %}
+{% include "partials/_pagination.html" with extra_query="statut="|add:current_status %}
+{% endblock %}

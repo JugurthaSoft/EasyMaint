@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% translate "Connexion" %}{% endblock %}
+{% block bare %}
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="brand px-0"><span class="brand-logo">EM</span>EasyMaint</div>
+    <h1 class="h5 fw-bold mb-1">{% translate "Connexion" %}</h1>
+    <p class="muted mb-4">{% translate "Gestion de maintenance assistée par ordinateur" %}</p>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "partials/_form.html" %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <button class="btn btn-primary w-100 py-2" type="submit">{% translate "Se connecter" %}</button>
+    </form>
+    <p class="muted small mt-4 mb-0">{% translate "Mot de passe oublié ? Contactez l'administrateur EasyMaint de votre entreprise." %}</p>
+    <p class="muted small mt-2 mb-0"><a class="link-secondary" href="{% url 'core:about' %}">EasyMaint {{ easymaint_version }} · {% translate "logiciel libre (AGPL-3.0)" %}</a></p>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="card-em">{% translate "Vous êtes déjà connecté." %} <a href="{% url 'dashboard:home' %}">{% translate "Aller à l'accueil" %}</a></div>
+{% endblock %}

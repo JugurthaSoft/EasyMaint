@@ -1,0 +1,40 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Mouvements de stock" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% translate "Magasin" %}</h1><p class="sub">{% translate "Historique complet des mouvements, non modifiable." %}</p></div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'inventory:movement_export' %}?{{ filter_query }}">{% icon "download" %} {% translate "Exporter (Excel)" %}</a>
+    {% with item=None %}{% include "inventory/_movement_buttons.html" %}{% endwith %}
+  </div>
+</div>
+{% include "inventory/_nav.html" with section="movements" %}
+<form method="get" class="row g-2 mb-3">
+  {% if filters.article %}<input type="hidden" name="article" value="{{ filters.article }}">{% endif %}
+  <div class="col-md-3"><label class="visually-hidden" for="mv-q">{% translate "Recherche" %}</label><input class="form-control" id="mv-q" type="search" name="q" value="{{ filters.q }}" placeholder="{% translate 'Article, n°, document, OT…' %}"></div>
+  <div class="col-md-2"><label class="visually-hidden" for="mv-type">{% translate "Type" %}</label><select class="form-select" id="mv-type" name="type"><option value="">{% translate "Tous les types" %}</option>{% for v, l in kinds %}<option value="{{ v }}"{% if filters.type == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+  <div class="col-md-2"><label class="visually-hidden" for="mv-wh">{% translate "Magasin" %}</label><select class="form-select" id="mv-wh" name="magasin"><option value="">{% translate "Tous les magasins" %}</option>{% for w in warehouses %}<option value="{{ w.pk }}"{% if filters.magasin == w.pk|stringformat:"s" %} selected{% endif %}>{{ w.code }}</option>{% endfor %}</select></div>
+  <div class="col-md-2"><label class="visually-hidden" for="mv-du">{% translate "Du" %}</label><input class="form-control" id="mv-du" type="date" name="du" value="{{ filters.du }}"></div>
+  <div class="col-md-2"><label class="visually-hidden" for="mv-au">{% translate "Au" %}</label><input class="form-control" id="mv-au" type="date" name="au" value="{{ filters.au }}"></div>
+  <div class="col-md-1"><button class="btn btn-outline-secondary w-100" type="submit">{% translate "Filtrer" %}</button></div>
+</form>
+<div class="table-wrap">
+  <table class="table-em">
+    <thead><tr><th>{% translate "Date" %}</th><th>{% translate "N°" %}</th><th>{% translate "Type" %}</th><th>{% translate "Article" %}</th><th>{% translate "Magasin" %}</th><th class="num">{% translate "Qté" %}</th><th class="num">{% translate "Valeur" %}</th><th class="num">{% translate "Stock après" %}</th><th>{% translate "OT / document / motif" %}</th><th>{% translate "Par" %}</th></tr></thead>
+    <tbody>
+    {% for m in movements %}
+      <tr>
+        <td class="mono text-nowrap small">{{ m.moved_at|date:"d/m/Y H:i" }}</td><td class="mono small">{{ m.number }}</td><td>{{ m.get_kind_display }}</td>
+        <td><a class="mono small" href="{{ m.item.get_absolute_url }}">{{ m.item.reference }}</a> <span class="small">{{ m.item.designation|truncatechars:36 }}</span></td>
+        <td class="mono small">{{ m.warehouse.code }}</td>
+        <td class="num {% if m.quantity > 0 %}text-success{% else %}text-danger{% endif %}">{% if m.quantity > 0 %}+{% endif %}{{ m.quantity|number }}</td>
+        <td class="num">{{ m.value|money }}</td><td class="num">{{ m.stock_after|number }}</td>
+        <td class="small">{% if m.work_order %}{% include "inventory/_wo_ref.html" with order=m.work_order %} {% endif %}{{ m.document }}{% if m.reason %} <span class="muted">{{ m.reason|truncatechars:40 }}</span>{% endif %}{% if m.purchase_order %} <span class="muted">· {% translate "BC" %} {{ m.purchase_order }}</span>{% endif %}{% if m.supplier %} <span class="muted">· {{ m.supplier }}</span>{% endif %}</td>
+        <td class="small">{% if m.created_by %}{{ m.created_by }}{% else %}{% translate "système" %}{% endif %}{% if m.kind == "issue" or m.kind == "return" %}<div><a href="{% url 'inventory:movement_slip' m.pk %}" target="_blank" rel="noopener">{% translate "Bon" %}</a></div>{% endif %}</td>
+      </tr>
+    {% empty %}<tr><td colspan="10" class="empty-state">{% translate "Aucun mouvement." %}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "partials/_pagination.html" with extra_query=filter_query %}
+{% endblock %}

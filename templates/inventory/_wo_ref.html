@@ -1,0 +1,1 @@
+{% load easymaint %}{% if user|can:"workorders.view" %}<a href="{{ order.get_absolute_url }}">{{ order.number }}</a>{% else %}<span class="mono">{{ order.number }}</span>{% endif %}

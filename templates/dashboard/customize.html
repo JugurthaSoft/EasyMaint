@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% load i18n easymaint static %}
+{% block title %}{% translate "Personnaliser l'accueil" %}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'dashboard:home' %}">{% translate "Accueil" %}</a> › {% translate "Personnaliser" %}</div>
+<div class="page-head"><div><h1>{% translate "Personnaliser l'accueil" %}</h1><p class="sub">{% translate "Cochez les blocs à afficher et mettez-les dans l'ordre voulu avec les flèches. Seuls les blocs autorisés par votre rôle sont proposés." %}</p></div></div>
+<form method="post" class="card-em" style="max-width:760px">{% csrf_token %}
+  <ol class="list-unstyled mb-3" id="block-list">
+  {% for block, shown in rows %}
+    <li class="d-flex align-items-center gap-2 border rounded-3 p-2 mb-2" data-row>
+      <input type="hidden" name="order" value="{{ block.key }}">
+      <input class="form-check-input mt-0" type="checkbox" name="show" value="{{ block.key }}" id="b-{{ block.key }}"{% if shown %} checked{% endif %}>
+      <label class="flex-grow-1" for="b-{{ block.key }}">{{ block.label }}{% if block.width == "full" %} <span class="muted small">· {% translate "pleine largeur" %}</span>{% endif %}</label>
+      <button class="btn btn-sm btn-outline-secondary" type="button" data-move="up" aria-label="{% translate 'Monter' %} {{ block.label }}">↑</button>
+      <button class="btn btn-sm btn-outline-secondary" type="button" data-move="down" aria-label="{% translate 'Descendre' %} {{ block.label }}">↓</button>
+    </li>
+  {% endfor %}
+  </ol>
+  <div class="form-actions">
+    <button class="btn btn-link" type="submit" name="reset" value="1">{% translate "Rétablir la présentation de mon rôle" %}</button>
+    <a class="btn btn-outline-secondary" href="{% url 'dashboard:home' %}">{% translate "Annuler" %}</a>
+    <button class="btn btn-primary" type="submit">{% translate "Enregistrer" %}</button>
+  </div>
+</form>
+{% endblock %}
+{% block extra_js %}<script src="{% static 'js/dashboard_layout.js' %}"></script>{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% translate "Recherche" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{% translate "Recherche" %}</h1>
+    <p class="sub">{% blocktranslate count n=results|length %}{{ n }} résultat pour « {{ query }} »{% plural %}{{ n }} résultats pour « {{ query }} »{% endblocktranslate %}</p>
+  </div>
+</div>
+{% if query|length < 2 %}
+  <div class="card-em empty-state">{% translate "Saisissez au moins deux caractères." %}</div>
+{% else %}
+  {% regroup results by category as groups %}
+  {% for group in groups %}
+    <section class="card-em mb-3">
+      <h2>{{ group.grouper }}</h2>
+      {% for result in group.list %}
+        <a class="search-item rounded" href="{{ result.url }}">
+          <span class="flex-grow-1"><span class="d-block fw-semibold">{{ result.title }}</span><span class="d-block muted small">{{ result.subtitle }}</span></span>
+          {% if result.badge %}<span class="badge-em {{ result.badge_class }}">{{ result.badge }}</span>{% endif %}
+        </a>
+      {% endfor %}
+    </section>
+  {% empty %}
+    <div class="card-em empty-state">{% blocktranslate %}Aucun résultat pour « {{ query }} ».{% endblocktranslate %}</div>
+  {% endfor %}
+{% endif %}
+{% endblock %}

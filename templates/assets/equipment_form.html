@@ -1,0 +1,47 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% if equipment %}{{ equipment.code }}{% else %}{% translate "Nouvel équipement" %}{% endif %}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'assets:equipment_list' %}">{% translate "Équipements" %}</a> › {% if equipment %}<a href="{{ equipment.get_absolute_url }}">{{ equipment.code }}</a> › {% translate "Modifier" %}{% else %}{% translate "Nouveau" %}{% endif %}</div>
+<div class="page-head"><div><h1>{% if equipment %}{% translate "Modifier" %} {{ equipment.code }}{% else %}{% translate "Nouvel équipement" %}{% endif %}</h1></div></div>
+<form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+  <div class="row g-3">
+    <div class="col-xl-8">
+      <section class="card-em">
+        <div class="form-section">{% translate "Identification" %}</div>
+        <div class="row">
+          <div class="col-md-4">{% include "partials/_field.html" with field=form.code %}</div>
+          <div class="col-md-8">{% include "partials/_field.html" with field=form.designation %}</div>
+          <div class="col-md-6">{% include "partials/_field.html" with field=form.family %}</div>
+          <div class="col-md-6">{% include "partials/_field.html" with field=form.location %}</div>
+          <div class="col-md-6">{% include "partials/_field.html" with field=form.parent %}</div>
+          <div class="col-md-3">{% include "partials/_field.html" with field=form.status %}</div>
+          <div class="col-md-3">{% include "partials/_field.html" with field=form.criticality %}</div>
+        </div>
+        <div class="form-section mt-2">{% translate "Constructeur" %}</div>
+        <div class="row">
+          <div class="col-md-6">{% include "partials/_field.html" with field=form.manufacturer %}</div>
+          <div class="col-md-6">{% include "partials/_field.html" with field=form.brand %}</div>
+          <div class="col-md-4">{% include "partials/_field.html" with field=form.model %}</div>
+          <div class="col-md-4">{% include "partials/_field.html" with field=form.serial_number %}</div>
+          <div class="col-md-4">{% include "partials/_field.html" with field=form.commissioning_date %}</div>
+        </div>
+      </section>
+    </div>
+    <div class="col-xl-4">
+      <section class="card-em">
+        <div class="form-section">{% translate "Exploitation" %}</div>
+        {% include "partials/_field.html" with field=form.responsible %}
+        {% include "partials/_field.html" with field=form.required_hours_per_day %}
+        {% include "partials/_field.html" with field=form.operating_days_per_week %}
+        {% include "partials/_field.html" with field=form.photo %}
+        {% include "partials/_field.html" with field=form.notes %}
+      </section>
+    </div>
+  </div>
+  <div class="form-actions mt-3">
+    <a class="btn btn-outline-secondary" href="{% if equipment %}{{ equipment.get_absolute_url }}{% else %}{% url 'assets:equipment_list' %}{% endif %}">{% translate "Annuler" %}</a>
+    <button class="btn btn-primary" type="submit">{% translate "Enregistrer" %}</button>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% translate "Nouvel ordre de travail" %}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'workorders:wo_list' %}">{% translate "Ordres de travail" %}</a> › {% translate "Nouveau" %}</div>
+<div class="page-head"><div><h1>{% translate "Nouvel ordre de travail" %}</h1><p class="sub">{% translate "Création directe, sans demande d'intervention préalable." %}</p></div></div>
+<form method="post" novalidate>{% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+  <div class="row g-3">
+    <div class="col-xl-7"><section class="card-em">
+      {% include "partials/_field.html" with field=form.equipment %}
+      {% if form.kind %}{% include "partials/_field.html" with field=form.kind %}{% endif %}
+      {% include "partials/_field.html" with field=form.title %}
+      {% include "partials/_field.html" with field=form.description %}
+      <div class="row"><div class="col-sm-6">{% include "partials/_field.html" with field=form.priority %}</div><div class="col-sm-6 pt-sm-4">{% include "partials/_field.html" with field=form.production_stopped %}</div></div>
+    </section></div>
+    {% if form.technicians %}
+    <div class="col-xl-5"><section class="card-em">
+      <div class="form-section">{% translate "Planification (facultatif)" %}</div>
+      <div class="row"><div class="col-6">{% include "partials/_field.html" with field=form.planned_date %}</div><div class="col-6">{% include "partials/_field.html" with field=form.due_date %}</div></div>
+      {% include "partials/_field.html" with field=form.estimated_hours %}
+      {% include "partials/_field.html" with field=form.team %}
+      {% include "partials/_field.html" with field=form.technicians %}
+      {% include "partials/_field.html" with field=form.contractor %}
+    </section></div>
+    {% endif %}
+  </div>
+  <div class="form-actions mt-3">
+    <a class="btn btn-outline-secondary" href="{% url 'workorders:wo_list' %}">{% translate "Annuler" %}</a>
+    <button class="btn btn-primary" type="submit">{% translate "Créer l'OT" %}</button>
+  </div>
+</form>
+{% endblock %}

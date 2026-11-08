@@ -1,0 +1,46 @@
+{% extends "base.html" %}{% load i18n easymaint inventory_tags %}
+{% block title %}{% if purchase %}{{ purchase.number }}{% else %}{% translate "Nouvelle demande d'achat" %}{% endif %}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'inventory:purchase_list' %}">{% translate "Demandes d'achat" %}</a> › {% if purchase %}<a href="{{ purchase.get_absolute_url }}">{{ purchase.number }}</a> › {% translate "Modifier" %}{% else %}{% translate "Nouvelle" %}{% endif %}</div>
+<div class="page-head"><div><h1>{% if purchase %}{% translate "Modifier la demande" %} {{ purchase.number }}{% else %}{% translate "Nouvelle demande d'achat" %}{% endif %}</h1></div></div>
+{% items_datalist %}
+<form method="post" novalidate class="card-em">{% csrf_token %}<input type="hidden" name="rows" value="{{ rows|length }}">
+  {% if errors %}<div class="alert alert-danger">{% for e in errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+  <div class="row">
+    <div class="col-md-3">{% include "partials/_field.html" with field=form.requested_on %}</div>
+    <div class="col-md-5">{% include "partials/_field.html" with field=form.supplier %}</div>
+    <div class="col-md-4">{% include "partials/_field.html" with field=form.needed_by %}</div>
+  </div>
+  <div class="row">
+    <div class="col-md-6">{% include "partials/_field.html" with field=form.reason %}</div>
+    <div class="col-md-3">{% include "partials/_field.html" with field=form.work_order %}</div>
+    <div class="col-md-3">{% include "partials/_field.html" with field=form.equipment %}</div>
+  </div>
+  <h2 class="h6 mt-2">{% translate "Articles demandés" %}</h2>
+  <p class="small muted">{% translate "Choisissez un article du magasin (la désignation, l'unité et le dernier prix se remplissent seuls) ou décrivez librement une pièce non stockée." %}</p>
+  <div class="table-responsive"><table class="table-em">
+    <thead><tr><th>#</th><th style="min-width:150px">{% translate "Article du magasin" %}</th><th style="min-width:120px">{% translate "Réf. fournisseur" %}</th><th style="min-width:220px">{% translate "Désignation" %}</th><th style="width:110px" class="num">{% translate "Quantité" %}</th><th style="width:90px">{% translate "Unité" %}</th><th style="width:130px" class="num">{% translate "Prix estimé HT" %}</th></tr></thead>
+    <tbody>
+    {% for index, v in rows %}
+      <tr>
+        <td class="muted">{{ index|add:1 }}</td>
+        <td><input class="form-control form-control-sm" name="l-{{ index }}-item" value="{{ v.item }}" list="items-datalist" autocomplete="off" maxlength="80" aria-label="{% translate 'Article, ligne' %} {{ index|add:1 }}"></td>
+        <td><input class="form-control form-control-sm" name="l-{{ index }}-reference" value="{{ v.reference }}" maxlength="80" aria-label="{% translate 'Référence, ligne' %} {{ index|add:1 }}"></td>
+        <td><input class="form-control form-control-sm" name="l-{{ index }}-designation" value="{{ v.designation }}" maxlength="200" aria-label="{% translate 'Désignation, ligne' %} {{ index|add:1 }}"></td>
+        <td><input class="form-control form-control-sm text-end" name="l-{{ index }}-quantity" value="{{ v.quantity }}" inputmode="decimal" aria-label="{% translate 'Quantité, ligne' %} {{ index|add:1 }}"></td>
+        <td><input class="form-control form-control-sm" name="l-{{ index }}-unit" value="{{ v.unit }}" maxlength="20" aria-label="{% translate 'Unité, ligne' %} {{ index|add:1 }}"></td>
+        <td><input class="form-control form-control-sm text-end" name="l-{{ index }}-estimated_price" value="{{ v.estimated_price }}" inputmode="decimal" aria-label="{% translate 'Prix, ligne' %} {{ index|add:1 }}"></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% if not purchase %}<p class="small mt-2"><a href="?lignes={{ rows|length|add:6 }}">{% translate "Plus de lignes" %}</a></p>{% endif %}
+  {% include "partials/_field.html" with field=form.notes %}
+  {% include "partials/_field.html" with field=form.is_urgent %}
+  <div class="form-actions">
+    <a class="btn btn-outline-secondary" href="{% if purchase %}{{ purchase.get_absolute_url }}{% else %}{% url 'inventory:purchase_list' %}{% endif %}">{% translate "Annuler" %}</a>
+    <button class="btn btn-primary" type="submit">{% translate "Enregistrer" %}</button>
+  </div>
+</form>
+{% endblock %}

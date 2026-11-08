@@ -1,0 +1,52 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% if object %}{{ object.code }}{% else %}{% translate "Nouveau plan préventif" %}{% endif %}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'preventive:plan_list' %}">{% translate "Maintenance préventive" %}</a> › {% if object %}<a href="{{ object.get_absolute_url }}">{{ object.code }}</a> › {% translate "Modifier" %}{% else %}{% translate "Nouveau plan" %}{% endif %}</div>
+<div class="page-head"><div><h1>{% if object %}{% translate "Modifier" %} {{ object.code }}{% else %}{% translate "Nouveau plan préventif" %}{% endif %}</h1></div></div>
+<form method="post" novalidate>{% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+  <div class="row g-3">
+    <div class="col-xl-7 d-flex flex-column gap-3">
+      <section class="card-em">
+        <div class="form-section">{% translate "Opération" %}</div>
+        <div class="row"><div class="col-md-4">{% include "partials/_field.html" with field=form.code %}</div><div class="col-md-8">{% include "partials/_field.html" with field=form.name %}</div></div>
+        {% include "partials/_field.html" with field=form.equipment %}
+        {% include "partials/_field.html" with field=form.operations %}
+        {% include "partials/_field.html" with field=form.instructions %}
+        {% include "partials/_field.html" with field=form.checklist_text %}
+      </section>
+      <section class="card-em">
+        <div class="form-section">{% translate "Ressources" %}</div>
+        <div class="row"><div class="col-md-6">{% include "partials/_field.html" with field=form.estimated_hours %}</div><div class="col-md-6">{% include "partials/_field.html" with field=form.priority %}</div></div>
+        {% include "partials/_field.html" with field=form.team %}
+        <div class="row"><div class="col-md-6">{% include "partials/_field.html" with field=form.technicians %}</div><div class="col-md-6">{% include "partials/_field.html" with field=form.skills %}</div></div>
+      </section>
+    </div>
+    <div class="col-xl-5">
+      <section class="card-em">
+        <div class="form-section">{% translate "Déclenchement" %}</div>
+        {% include "partials/_field.html" with field=form.trigger_mode %}
+        <fieldset class="border rounded-3 p-3 mb-3" data-trigger="calendar">
+          <legend class="float-none w-auto px-2 fs-6 fw-semibold mb-0">{% translate "Calendrier" %}</legend>
+          <div class="row"><div class="col-5">{% include "partials/_field.html" with field=form.period_value %}</div><div class="col-7">{% include "partials/_field.html" with field=form.period_unit %}</div></div>
+          <p class="muted small mt-n2">{% translate "Exemples : 1 semaine (hebdomadaire), 3 mois (trimestrielle), 6 mois (semestrielle)." %}</p>
+          {% include "partials/_field.html" with field=form.next_due_date %}
+          {% include "partials/_field.html" with field=form.schedule_basis %}
+          {% include "partials/_field.html" with field=form.lead_days %}
+        </fieldset>
+        <fieldset class="border rounded-3 p-3 mb-3" data-trigger="meter">
+          <legend class="float-none w-auto px-2 fs-6 fw-semibold mb-0">{% translate "Compteur" %}</legend>
+          {% include "partials/_field.html" with field=form.meter %}
+          <div class="row"><div class="col-6">{% include "partials/_field.html" with field=form.meter_interval %}</div><div class="col-6">{% include "partials/_field.html" with field=form.meter_lead %}</div></div>
+          {% include "partials/_field.html" with field=form.last_done_meter %}
+        </fieldset>
+        {% include "partials/_field.html" with field=form.is_active %}
+      </section>
+    </div>
+  </div>
+  <div class="form-actions mt-3">
+    <a class="btn btn-outline-secondary" href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'preventive:plan_list' %}{% endif %}">{% translate "Annuler" %}</a>
+    <button class="btn btn-primary" type="submit">{% translate "Enregistrer" %}</button>
+  </div>
+</form>
+{% endblock %}

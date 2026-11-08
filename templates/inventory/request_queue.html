@@ -1,0 +1,56 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Pièces à délivrer" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% translate "Magasin" %}</h1><p class="sub">{% translate "Pièces demandées par les OT, à préparer et délivrer (les plus urgentes en premier), et retours des pièces non utilisées." %}</p></div></div>
+{% include "inventory/_nav.html" with section="requests" %}
+{% with here=request.get_full_path %}
+<div class="table-wrap">
+  <table class="table-em">
+    <thead><tr><th>{% translate "OT" %}</th><th>{% translate "Équipement" %}</th><th>{% translate "Article" %}</th><th>{% translate "Magasin" %}</th><th class="num">{% translate "Reste à délivrer" %}</th><th class="num">{% translate "En stock" %}</th><th>{% translate "Demandé par" %}</th><th></th></tr></thead>
+    <tbody>
+    {% for line in lines %}
+      <tr>
+        <td>{% include "inventory/_wo_ref.html" with order=line.work_order %}<div class="small muted">{{ line.work_order.get_priority_display }}</div></td>
+        <td class="mono small">{{ line.work_order.equipment.code }}</td>
+        <td><a class="mono small" href="{{ line.item.get_absolute_url }}">{{ line.item.reference }}</a> {{ line.item.designation|truncatechars:40 }}{% if line.note %}<div class="small muted">{{ line.note }}</div>{% endif %}</td>
+        <td class="mono small">{{ line.warehouse.code }}</td>
+        <td class="num">{{ line.remaining|number }}</td>
+        <td class="num"><span class="{% if line.in_stock < line.remaining %}text-danger fw-semibold{% endif %}">{{ line.in_stock|number }}</span></td>
+        <td class="small">{% if line.created_by %}{{ line.created_by }}{% else %}{% translate "système" %}{% endif %}<div class="muted">{{ line.created_at|date:"d/m/Y H:i" }}</div></td>
+        <td class="text-end text-nowrap">{% if user|can:"stock.move" %}
+          <form class="d-inline-flex gap-1" method="post" action="{% url 'inventory:request_issue' line.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+            <input class="form-control form-control-sm" style="width:80px" type="number" step="0.001" min="0" name="quantity" value="{{ line.remaining|stringformat:'s' }}" aria-label="{% translate 'Quantité à délivrer' %}">
+            <button class="btn btn-sm btn-primary" type="submit"{% if not line.in_stock %} disabled{% endif %}>{% translate "Délivrer" %}</button>
+          </form>{% endif %}</td>
+      </tr>
+    {% empty %}<tr><td colspan="8" class="empty-state">{% translate "Aucune pièce en attente." %}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h2 class="h5 mt-4">{% translate "Pièces délivrées : retours possibles" %}</h2>
+<p class="small muted">{% translate "Pièce rapportée non utilisée : elle rentre en stock au coût de sa sortie et le coût de l'OT diminue. Impossible après la validation de l'OT." %}</p>
+<div class="table-wrap">
+  <table class="table-em">
+    <thead><tr><th>{% translate "OT" %}</th><th>{% translate "Équipement" %}</th><th>{% translate "Article" %}</th><th>{% translate "Magasin" %}</th><th class="num">{% translate "Délivré" %}</th><th class="num">{% translate "Déjà retourné" %}</th><th></th></tr></thead>
+    <tbody>
+    {% for line in returnable %}
+      <tr>
+        <td>{% include "inventory/_wo_ref.html" with order=line.work_order %}<div class="small muted">{{ line.work_order.get_status_display }}</div></td>
+        <td class="mono small">{{ line.work_order.equipment.code }}</td>
+        <td><a class="mono small" href="{{ line.item.get_absolute_url }}">{{ line.item.reference }}</a> {{ line.item.designation|truncatechars:40 }}</td>
+        <td class="mono small">{{ line.warehouse.code }}</td>
+        <td class="num">{{ line.issued|number }}</td>
+        <td class="num">{% if line.returned %}{{ line.returned|number }}{% else %}—{% endif %}</td>
+        <td class="text-end text-nowrap">{% if line.last_issue %}<a class="btn btn-sm btn-link" href="{% url 'inventory:movement_slip' line.last_issue.pk %}" target="_blank" rel="noopener">{% icon "printer" 16 %} {% translate "Bon de sortie" %}</a>{% endif %}{% if user|can:"stock.move" %}
+          <form class="d-inline-flex gap-1" method="post" action="{% url 'inventory:request_return' line.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+            <input class="form-control form-control-sm" style="width:80px" type="number" step="0.001" min="0" name="quantity" value="1" aria-label="{% translate 'Quantité retournée' %}">
+            <button class="btn btn-sm btn-outline-secondary" type="submit">{% translate "Retour en stock" %}</button>
+          </form>{% endif %}</td>
+      </tr>
+    {% empty %}<tr><td colspan="7" class="empty-state">{% translate "Aucune pièce délivrée en cours." %}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endwith %}
+{% endblock %}

@@ -1,0 +1,7 @@
+{% load i18n easymaint %}<section class="tiles" aria-label="{% translate 'Interventions' %}">
+  <a class="tile" href="{% url 'workorders:request_list' %}"><span class="lbl">{% translate "Demandes à traiter" %}</span><span class="val{% if wo.new_requests %} val-orange{% endif %}">{{ wo.new_requests }}</span><span class="sub">{% translate "nouvelles demandes d'intervention" %}</span></a>
+  <a class="tile" href="{% url 'workorders:wo_list' %}?statut=en-cours"><span class="lbl">{% translate "OT en cours" %}</span><span class="val">{{ wo.in_progress }}</span><span class="sub">{% blocktranslate with n=wo.waiting %}{{ n }} en attente{% endblocktranslate %}</span></a>
+  <a class="tile" href="{% url 'workorders:wo_list' %}?retard=1"><span class="lbl">{% translate "OT en retard" %}</span><span class="val{% if wo.late %} val-red{% endif %}">{{ wo.late }}</span><span class="sub">{% translate "échéance dépassée" %}</span></a>
+  <a class="tile" href="{% url 'workorders:wo_list' %}?statut=a-planifier"><span class="lbl">{% translate "À planifier" %}</span><span class="val">{{ wo.to_plan }}</span><span class="sub">{% blocktranslate with h=wo.backlog_hours|number %}backlog estimé : {{ h }} h{% endblocktranslate %}</span></a>
+  <a class="tile" href="{% url 'workorders:wo_list' %}?statut=termines"><span class="lbl">{% translate "À valider" %}</span><span class="val">{{ wo.to_validate }}</span><span class="sub">{% translate "OT terminés" %}</span></a>
+</section>

@@ -1,0 +1,10 @@
+{% load i18n %}{% if messages %}
+<div class="messages-em" role="status">
+  {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %} alert-dismissible fade show mb-0"{% if message.tags == 'success' %} data-autoclose{% endif %}>
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{% translate 'Fermer' %}"></button>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}

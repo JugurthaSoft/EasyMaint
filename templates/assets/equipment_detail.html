@@ -1,0 +1,288 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{{ equipment.code }}{% endblock %}
+{% block content %}
+<nav class="breadcrumb-em" aria-label="{% translate 'Fil d’Ariane' %}"><a href="{% url 'assets:equipment_list' %}">{% translate "Équipements" %}</a> › {{ location_path }}{% if equipment.parent %} › <a href="{{ equipment.parent.get_absolute_url }}">{{ equipment.parent.code }}</a>{% endif %}</nav>
+
+<div class="page-head align-items-start">
+  <div class="d-flex gap-3 align-items-center min-w-0">
+    {% if equipment.photo %}
+      <img src="{% url 'assets:equipment_photo' equipment.pk %}" alt="{% translate 'Photo de' %} {{ equipment.code }}" style="width:72px;height:72px;object-fit:cover;border-radius:12px;border:1px solid var(--em-border)">
+    {% else %}
+      <span class="d-inline-flex align-items-center justify-content-center flex-none" style="width:72px;height:72px;border-radius:12px;background:#EEF2F6;color:#475467">{% icon "equipment" 32 %}</span>
+    {% endif %}
+    <div class="min-w-0">
+      <h1>{{ equipment.code }} · {{ equipment.designation }}</h1>
+      <div class="d-flex flex-wrap gap-2 mt-2">
+        <span class="badge-em {{ equipment.status_badge }}">{{ equipment.get_status_display }}</span>
+        <span class="badge-em b-gray">{% translate "Criticité" %} {{ equipment.criticality }}</span>
+        <span class="badge-em b-gray">{{ equipment.family }}</span>
+      </div>
+    </div>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    {% if user|can:"assets.manage" %}
+      <div class="dropdown">
+        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">{% translate "Changer l'état" %}</button>
+        <form class="dropdown-menu p-1" method="post" action="{% url 'assets:equipment_change_status' equipment.pk %}">{% csrf_token %}
+          {% for value, label in statuses %}{% if value != equipment.status %}
+            <button class="dropdown-item" type="submit" name="status" value="{{ value }}"{% if value == "retired" %} data-confirm="{% translate 'Réformer cet équipement ? Il ne sera plus proposé dans les listes.' %}"{% endif %}>{{ label }}</button>
+          {% endif %}{% endfor %}
+        </form>
+      </div>
+      <a class="btn btn-outline-secondary" href="{% url 'assets:equipment_create' %}?parent={{ equipment.pk }}&amp;localisation={{ equipment.location_id }}">{% icon "plus" %} {% translate "Sous-équipement" %}</a>
+    {% endif %}
+    {% if user|can:"requests.create" %}<a class="btn btn-outline-danger" href="{% url 'workorders:request_create' %}?equipement={{ equipment.pk }}">{% translate "Déclarer une panne" %}</a>{% endif %}
+    {% if user|can:"workorders.manage" %}<a class="btn btn-outline-secondary" href="{% url 'workorders:wo_create' %}?equipement={{ equipment.pk }}">{% icon "plus" %} {% translate "OT" %}</a>{% endif %}
+    <a class="btn btn-outline-secondary" href="{% url 'assets:equipment_qr_labels' %}?id={{ equipment.pk }}">{% icon "qr" %} {% translate "Étiquette QR" %}</a>
+    <a class="btn btn-outline-secondary" href="{% url 'assets:equipment_pdf' equipment.pk %}" target="_blank" rel="noopener">{% icon "printer" %} {% translate "Fiche PDF" %}</a>
+    {% if user|can:"assets.manage" %}
+      <a class="btn btn-primary" href="{% url 'assets:equipment_update' equipment.pk %}">{% icon "edit" %} {% translate "Modifier" %}</a>
+    {% endif %}
+  </div>
+</div>
+
+<nav class="tabs-em" aria-label="{% translate 'Sections de la fiche' %}">
+  {% for key, label in tabs %}
+    <a href="?onglet={{ key }}" class="{% if tab == key %}active{% endif %}"{% if tab == key %} aria-current="page"{% endif %}>{{ label }}{% if key == "compteurs" %} ({{ meters|length }}){% elif key == "documents" %} ({{ attachment_count }}){% endif %}</a>
+  {% endfor %}
+</nav>
+
+{% if tab == "resume" %}
+<div class="row g-3">
+  <div class="col-xl-7">
+    <section class="card-em h-100">
+      <h2>{% translate "Identification" %}</h2>
+      <div class="kv">
+        <div><div class="k">{% translate "Famille" %}</div><div class="v">{{ equipment.family }}</div></div>
+        <div><div class="k">{% translate "Fabricant" %}</div><div class="v">{{ equipment.manufacturer|default:"—" }}</div></div>
+        <div><div class="k">{% translate "Marque · modèle" %}</div><div class="v">{{ equipment.brand|default:"—" }}{% if equipment.model %} · {{ equipment.model }}{% endif %}</div></div>
+        <div><div class="k">{% translate "N° de série" %}</div><div class="v mono">{{ equipment.serial_number|default:"—" }}</div></div>
+        <div><div class="k">{% translate "Mise en service" %}</div><div class="v mono">{{ equipment.commissioning_date|date:"d/m/Y"|default:"—" }}</div></div>
+        <div><div class="k">{% translate "Responsable" %}</div><div class="v">{{ equipment.responsible|default:"—" }}</div></div>
+        <div><div class="k">{% translate "Localisation" %}</div><div class="v">{{ location_path }}</div></div>
+        <div><div class="k">{% translate "Temps requis" %}</div><div class="v mono">{{ equipment.required_hours_per_day|number }} h/j · {{ equipment.operating_days_per_week }} j/7</div></div>
+      </div>
+      {% if equipment.notes %}<div class="mt-3 pt-3 border-top"><div class="k muted small mb-1">{% translate "Notes" %}</div><div style="white-space:pre-line">{{ equipment.notes }}</div></div>{% endif %}
+    </section>
+  </div>
+  <div class="col-xl-5 d-flex flex-column gap-3">
+    <section class="card-em">
+      <h2>{% translate "Compteurs" %}</h2>
+      {% for meter in meters %}
+        <div class="d-flex justify-content-between align-items-baseline py-1">
+          <span>{{ meter.name }}</span>
+          <span class="text-end"><span class="fw-bold mono fs-5">{{ meter.current_value|number }} {{ meter.unit }}</span><br><span class="muted small">{% if meter.last_reading_at %}{% translate "relevé du" %} {{ meter.last_reading_at|date:"d/m/Y" }}{% else %}{% translate "aucun relevé" %}{% endif %}</span></span>
+        </div>
+      {% empty %}
+        <p class="muted mb-0">{% translate "Aucun compteur." %} {% if user|can:"assets.manage" %}<a href="{% url 'assets:meter_create' equipment.pk %}">{% translate "Ajouter un compteur" %}</a>{% endif %}</p>
+      {% endfor %}
+    </section>
+    <section class="card-em">
+      <h2>{% translate "Sous-équipements" %}</h2>
+      {% for child in children %}
+        <div class="d-flex justify-content-between align-items-center py-1 gap-2">
+          <a href="{{ child.get_absolute_url }}">{{ child.code }} · {{ child.designation }}</a>
+          <span class="badge-em {{ child.status_badge }}">{{ child.get_status_display }}</span>
+        </div>
+      {% empty %}
+        <p class="muted mb-0">{% translate "Aucun sous-équipement." %}</p>
+      {% endfor %}
+    </section>
+    {% if show_plans %}
+    <section class="card-em">
+      <div class="d-flex justify-content-between align-items-center mb-2"><h2 class="mb-0">{% translate "Plans préventifs" %}</h2>{% if user|can:"preventive.manage" %}<a class="small" href="{% url 'preventive:plan_create' %}?equipement={{ equipment.pk }}">+ {% translate "Plan" %}</a>{% endif %}</div>
+      {% for plan in plans %}
+        <div class="d-flex justify-content-between align-items-baseline gap-2 py-1">
+          <a href="{{ plan.get_absolute_url }}">{{ plan.name }}</a>
+          <span class="muted small text-nowrap">{{ plan.trigger_summary }}{% if plan.uses_calendar %} · {{ plan.next_due_date|date:"d/m/Y" }}{% endif %}</span>
+        </div>
+      {% empty %}<p class="muted mb-0">{% translate "Aucun plan préventif." %}</p>{% endfor %}
+    </section>
+    {% endif %}
+    {% if interventions %}
+    <section class="card-em">
+      <h2>{% translate "Interventions et coûts" %}</h2>
+      <div class="d-flex justify-content-between py-1"><span>{% translate "Pannes enregistrées" %}</span><span class="fw-bold mono">{{ interventions.failures }}</span></div>
+      <div class="d-flex justify-content-between py-1"><span>{% translate "OT validés" %}</span><span class="fw-bold mono">{{ interventions.validated_count }}</span></div>
+      <div class="d-flex justify-content-between py-1"><span>{% translate "Coût cumulé (OT validés)" %}</span><span class="fw-bold mono">{{ interventions.validated_cost|money }}</span></div>
+      <a class="small" href="?onglet=interventions">{% translate "Voir les interventions" %}</a>
+    </section>
+    {% endif %}
+  </div>
+</div>
+
+{% elif tab == "interventions" %}
+{% if interventions %}
+<div class="table-wrap">
+  <table class="table-em">
+    <thead><tr><th>{% translate "N° OT" %}</th><th>{% translate "Type" %}</th><th>{% translate "Intitulé" %}</th><th>{% translate "Statut" %}</th><th>{% translate "Créé le" %}</th><th>{% translate "Terminé le" %}</th><th class="num">{% translate "Coût" %}</th></tr></thead>
+    <tbody>
+    {% for wo in interventions.orders %}
+      <tr><td class="text-nowrap"><a class="fw-semibold mono" href="{{ wo.get_absolute_url }}">{{ wo.number }}</a></td><td><span class="badge-em {{ wo.kind_badge }}">{{ wo.get_kind_display }}</span></td><td>{{ wo.title }}</td><td><span class="badge-em {{ wo.status_badge }}">{{ wo.get_status_display }}</span></td><td class="mono small">{{ wo.created_at|date:"d/m/Y" }}</td><td class="mono small">{{ wo.finished_at|date:"d/m/Y"|default:"—" }}</td><td class="num">{% if wo.status == "validated" %}{{ wo.total_cost|money }}{% else %}—{% endif %}</td></tr>
+    {% empty %}<tr><td colspan="7" class="empty-state">{% translate "Aucune intervention sur cet équipement." %}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card-em empty-state">{% translate "Votre rôle ne donne pas accès aux interventions." %}</div>
+{% endif %}
+
+{% elif tab == "mesures" %}
+{% if show_condition %}
+<div class="d-flex flex-wrap gap-2 mb-3">
+  {% if user|can:"condition.record" %}
+    <a class="btn btn-primary" href="{% url 'condition:session_create' equipment.pk %}?type=inspection">{% icon "plus" %} {% translate "Relevé / contrôle" %}</a>
+    <a class="btn btn-outline-secondary" href="{% url 'condition:session_create' equipment.pk %}?type=vibration">{% translate "Analyse vibratoire" %}</a>
+    <a class="btn btn-outline-secondary" href="{% url 'condition:session_create' equipment.pk %}?type=oil">{% translate "Analyse d'huile" %}</a>
+  {% endif %}
+  {% if user|can:"condition.manage" %}<a class="btn btn-outline-secondary" href="{% url 'condition:point_create' equipment.pk %}">{% icon "plus" %} {% translate "Point de mesure" %}</a>{% endif %}
+</div>
+{% if condition_alerts %}<div class="mb-3">{% include "condition/_alerts_table.html" with alerts=condition_alerts %}</div>{% endif %}
+<div class="row g-3">
+  <div class="col-xl-8">
+    {% for row in condition_rows %}
+      <section class="card-em mb-3">
+        <div class="d-flex justify-content-between align-items-baseline mb-2">
+          <h2 class="mb-0"><span class="level-dot {{ row.worst }}" aria-hidden="true"></span> <a href="{{ row.point.get_absolute_url }}">{{ row.point.name }}</a></h2>
+          <span class="muted small">{{ row.point.code }}{% if row.point.position %} · {{ row.point.position }}{% endif %}</span>
+        </div>
+        <table class="table-em">
+          <tbody>
+          {% for p in row.params %}
+            <tr><td>{{ p.parameter.name }}</td>
+              <td class="num">{% if p.measurement %}{{ p.measurement.value|number }} {{ p.parameter.unit }}{% else %}—{% endif %}</td>
+              <td>{% if p.measurement %}<span class="badge-em {{ p.measurement.level_badge }}">{{ p.measurement.get_level_display }}</span>{% endif %}</td>
+              <td class="mono small muted text-end">{{ p.measurement.measured_at|date:"d/m/Y" }}</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </section>
+    {% empty %}
+      <div class="card-em empty-state">{% translate "Aucun point de mesure sur cet équipement." %}</div>
+    {% endfor %}
+  </div>
+  <div class="col-xl-4">
+    <section class="card-em">
+      <h2>{% translate "Dernières tournées" %}</h2>
+      {% for s in condition_sessions %}
+        <div class="d-flex justify-content-between gap-2 py-1 border-bottom"><a href="{{ s.get_absolute_url }}">{{ s.get_kind_display }}</a><span class="muted small">{{ s.measured_at|date:"d/m/Y" }}</span></div>
+      {% empty %}<p class="muted mb-0">{% translate "Aucune mesure." %}</p>{% endfor %}
+    </section>
+  </div>
+</div>
+{% else %}
+<div class="card-em empty-state">{% translate "Votre rôle ne donne pas accès à la maintenance conditionnelle." %}</div>
+{% endif %}
+
+{% elif tab == "pieces" %}
+{% if show_parts %}{% include "inventory/_equipment_parts.html" %}
+{% else %}
+<div class="card-em empty-state">{% translate "Votre rôle ne donne pas accès au magasin." %}</div>
+{% endif %}
+
+{% elif tab == "couts" %}
+{% if show_costs %}{% include "finance/_equipment_costs.html" %}
+{% else %}
+<div class="card-em empty-state">{% translate "Votre rôle ne donne pas accès aux coûts." %}</div>
+{% endif %}
+
+{% elif tab == "compteurs" %}
+<div class="row g-3">
+  <div class="col-xl-6">
+    <section class="card-em">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">{% translate "Compteurs" %}</h2>
+        {% if user|can:"assets.manage" %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'assets:meter_create' equipment.pk %}">{% icon "plus" 16 %} {% translate "Compteur" %}</a>{% endif %}
+      </div>
+      {% for meter in meters %}
+        <div class="border rounded-3 p-3 mb-3">
+          <div class="d-flex justify-content-between flex-wrap gap-2">
+            <div><div class="fw-semibold">{{ meter.name }}</div><div class="muted small">{{ meter.get_kind_display }}{% if meter.is_cumulative %} · {% translate "cumulatif" %}{% endif %}</div></div>
+            <div class="text-end"><div class="fw-bold mono fs-5">{{ meter.current_value|number }} {{ meter.unit }}</div><div class="muted small">{% if meter.last_reading_at %}{{ meter.last_reading_at|date:"d/m/Y H:i" }}{% else %}{% translate "aucun relevé" %}{% endif %}</div></div>
+          </div>
+          {% if user|can:"meters.record" %}
+          <form class="row g-2 align-items-end mt-2" method="post" action="{% url 'assets:reading_create' meter.pk %}">{% csrf_token %}
+            <div class="col-sm-4"><label class="form-label small" for="v-{{ meter.pk }}">{% translate "Nouvelle valeur" %}</label><input class="form-control" id="v-{{ meter.pk }}" name="value" type="number" step="0.01" min="0" inputmode="decimal" required></div>
+            <div class="col-sm-5"><label class="form-label small" for="d-{{ meter.pk }}">{% translate "Date" %}</label><input class="form-control" id="d-{{ meter.pk }}" name="reading_at" type="datetime-local" value="{{ reading_form.reading_at.value|date:'Y-m-d\TH:i' }}" required></div>
+            <div class="col-sm-3"><button class="btn btn-primary w-100" type="submit">{% translate "Relever" %}</button></div>
+          </form>
+          {% endif %}
+        </div>
+      {% empty %}
+        <p class="muted mb-0">{% translate "Aucun compteur pour cet équipement." %}</p>
+      {% endfor %}
+    </section>
+  </div>
+  <div class="col-xl-6">
+    <section class="card-em">
+      <h2>{% translate "Derniers relevés" %}</h2>
+      <div class="table-responsive">
+        <table class="table-em">
+          <thead><tr><th>{% translate "Date" %}</th><th>{% translate "Compteur" %}</th><th class="num">{% translate "Valeur" %}</th><th>{% translate "Saisi par" %}</th></tr></thead>
+          <tbody>
+          {% for reading in recent_readings %}
+            <tr><td class="mono text-nowrap">{{ reading.reading_at|date:"d/m/Y H:i" }}</td><td>{{ reading.meter.name }}</td><td class="num">{{ reading.value|number }} {{ reading.meter.unit }}</td><td class="small">{{ reading.created_by|default:reading.get_source_display }}</td></tr>
+          {% empty %}
+            <tr><td colspan="4" class="empty-state">{% translate "Aucun relevé." %}</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+
+{% elif tab == "documents" %}
+<div class="row g-3">
+  <div class="col-xl-8">
+    <div class="table-wrap">
+      <table class="table-em">
+        <thead><tr><th>{% translate "Document" %}</th><th>{% translate "Catégorie" %}</th><th>{% translate "Ajouté le" %}</th><th class="num">{% translate "Taille" %}</th><th></th></tr></thead>
+        <tbody>
+        {% for doc in attachments %}
+          <tr>
+            <td><a href="{% url 'assets:attachment_download' doc.pk %}">{% icon "file" 16 %} {{ doc.display_name }}</a>{% if doc.title %}<div class="muted small">{{ doc.original_name }}</div>{% endif %}</td>
+            <td>{{ doc.get_category_display }}</td>
+            <td class="mono">{{ doc.created_at|date:"d/m/Y" }}</td>
+            <td class="num">{{ doc.size|filesize }}</td>
+            <td class="text-end">{% if user|can:"assets.manage" %}<form method="post" action="{% url 'assets:attachment_delete' doc.pk %}">{% csrf_token %}<button class="btn btn-sm btn-link text-danger p-0" type="submit" data-confirm="{% translate 'Supprimer définitivement ce document ?' %}">{% translate "Supprimer" %}</button></form>{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="empty-state">{% translate "Aucun document. Manuels, plans et fiches techniques se joignent ici." %}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% if user|can:"assets.manage" %}
+  <div class="col-xl-4">
+    <form class="card-em" method="post" enctype="multipart/form-data" action="{% url 'assets:attachment_upload' equipment.pk %}">{% csrf_token %}
+      <h2>{% translate "Ajouter un document" %}</h2>
+      {% include "partials/_form.html" with form=attachment_form %}
+      <p class="muted small">{% translate "PDF, images, plans DWG/DXF, Office, ZIP." %}</p>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">{% icon "upload" %} {% translate "Envoyer" %}</button></div>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+{% elif tab == "historique" %}
+<div class="table-wrap">
+  <table class="table-em">
+    <thead><tr><th>{% translate "Date" %}</th><th>{% translate "Par" %}</th><th>{% translate "Action" %}</th><th>{% translate "Modifications" %}</th></tr></thead>
+    <tbody>
+    {% for entry in history %}
+      <tr>
+        <td class="mono text-nowrap">{{ entry.at|date:"d/m/Y H:i" }}</td>
+        <td>{{ entry.user|default:entry.username }}</td>
+        <td>{{ entry.get_action_display }}</td>
+        <td class="small">{% for field, values in entry.changes.items %}<div><span class="fw-semibold">{{ field }}</span> : {% if values.0 %}{{ values.0 }} → {% endif %}{% if values.1 %}{{ values.1 }}{% else %}{% translate "(vide)" %}{% endif %}</div>{% empty %}—{% endfor %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4" class="empty-state">{% translate "Aucune modification enregistrée." %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

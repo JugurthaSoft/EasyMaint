@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% translate "Mon profil" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% translate "Mon profil" %}</h1></div></div>
+<div class="row g-3">
+  <div class="col-lg-6">
+    <section class="card-em">
+      <h2>{% translate "Mes informations" %}</h2>
+      <div class="kv">
+        <div><div class="k">{% translate "Nom" %}</div><div class="v">{{ user }}</div></div>
+        <div><div class="k">{% translate "Identifiant" %}</div><div class="v">{{ user.username }}</div></div>
+        <div><div class="k">{% translate "Rôle" %}</div><div class="v">{{ user.role|default:"—" }}</div></div>
+        <div><div class="k">{% translate "Fonction" %}</div><div class="v">{{ user.job_title|default:"—" }}</div></div>
+        <div><div class="k">{% translate "E-mail" %}</div><div class="v">{{ user.email|default:"—" }}</div></div>
+        <div><div class="k">{% translate "Dernière connexion" %}</div><div class="v">{{ user.last_login|date:"d/m/Y H:i"|default:"—" }}</div></div>
+      </div>
+    </section>
+  </div>
+  <div class="col-lg-6">
+    <section class="card-em">
+      <h2>{% translate "Changer mon mot de passe" %}</h2>
+      <form method="post" novalidate>{% csrf_token %}
+        {% include "partials/_form.html" %}
+        <div class="form-actions"><button class="btn btn-primary" type="submit">{% translate "Enregistrer" %}</button></div>
+      </form>
+    </section>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Demandes d'intervention" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% translate "Demandes d'intervention" %}</h1><p class="sub">{% if user|can:"requests.manage" %}{% translate "À analyser puis accepter (création d'un OT) ou refuser." %}{% else %}{% translate "Vos demandes et leur suivi." %}{% endif %}</p></div>
+  <a class="btn btn-primary" href="{% url 'workorders:request_create' %}">{% icon "plus" %} {% translate "Déclarer une panne" %}</a>
+</div>
+<div class="pills mb-3">
+  <a class="pill{% if current_status != "new" and current_status != "accepted" and current_status != "rejected" %} active{% endif %}" href="?statut=tous">{% translate "Toutes" %}</a>
+  {% for value, label in statuses %}<a class="pill{% if current_status == value %} active{% endif %}" href="?statut={{ value }}">{{ label }}</a>{% endfor %}
+</div>
+<div class="table-wrap">
+  <table class="table-em">
+    <thead><tr><th>{% translate "N°" %}</th><th>{% translate "Équipement" %}</th><th>{% translate "Problème" %}</th><th>{% translate "Priorité" %}</th><th>{% translate "Déclarée" %}</th><th>{% translate "Statut" %}</th><th>{% translate "OT" %}</th></tr></thead>
+    <tbody>
+    {% for r in requests_list %}
+      <tr>
+        <td class="text-nowrap"><a class="fw-semibold" href="{{ r.get_absolute_url }}">{{ r.number }}</a></td>
+        <td class="text-nowrap">{{ r.equipment.code }}{% if r.production_stopped %} <span class="badge-em b-orange">{% translate "arrêt" %}</span>{% endif %}</td>
+        <td>{{ r.description|truncatechars:90 }}</td>
+        <td><span class="badge-em {{ r.priority_badge }}">{{ r.get_priority_display }}</span></td>
+        <td class="mono small text-nowrap">{{ r.requested_at|date:"d/m/Y H:i" }}<div class="muted">{{ r.requested_by|default:"" }}</div></td>
+        <td><span class="badge-em {{ r.status_badge }}">{{ r.get_status_display }}</span></td>
+        <td class="text-nowrap">{% if r.work_order %}<a href="{{ r.work_order.get_absolute_url }}">{{ r.work_order.number }}</a>{% else %}—{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7" class="empty-state">{% translate "Aucune demande." %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "partials/_pagination.html" with extra_query="statut="|add:current_status %}
+{% endblock %}

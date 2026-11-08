@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% translate "Accès refusé" %}{% endblock %}
+{% block content %}
+<div class="card-em empty-state">
+  <h1 class="h4 text-body">{% translate "Accès refusé" %}</h1>
+  <p>{% translate "Votre rôle ne donne pas accès à cette page. Si vous en avez besoin, adressez-vous à l'administrateur d'EasyMaint de votre entreprise." %}</p>
+  <a class="btn btn-primary" href="{% url 'dashboard:home' %}">{% translate "Retour à l'accueil" %}</a>
+</div>
+{% endblock %}
+{% block bare %}
+<div class="login-wrap"><div class="login-card text-center">
+  <h1 class="h4">{% translate "Accès refusé" %}</h1>
+  <a class="btn btn-primary mt-2" href="{% url 'accounts:login' %}">{% translate "Se connecter" %}</a>
+</div></div>
+{% endblock %}

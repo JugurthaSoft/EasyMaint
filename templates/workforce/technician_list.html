@@ -1,0 +1,52 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Équipes" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% translate "Techniciens et équipes" %}</h1><p class="sub">{% translate "Intervenants internes, leurs compétences et leur coût horaire." %}</p></div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'workforce:referentials' %}">{% translate "Compétences et sous-traitants" %}</a>
+    {% if user|can:"workforce.manage" %}<a class="btn btn-primary" href="{% url 'workforce:technician_create' %}">{% icon "plus" %} {% translate "Nouveau technicien" %}</a>{% endif %}
+  </div>
+</div>
+<div class="row g-3">
+  <div class="col-xl-8">
+    <form class="d-flex flex-wrap gap-2 mb-3" method="get">
+      <input class="form-control" style="max-width:320px" type="search" name="q" value="{{ request.GET.q }}" placeholder="{% translate 'Nom, matricule, spécialité…' %}" aria-label="{% translate 'Filtrer' %}">
+      <label class="form-check d-flex align-items-center gap-2 mb-0"><input class="form-check-input" type="checkbox" name="inactifs" value="1"{% if request.GET.inactifs == "1" %} checked{% endif %} data-autosubmit> {% translate "Afficher les inactifs" %}</label>
+    </form>
+    <div class="table-wrap">
+      <table class="table-em">
+        <thead><tr><th>{% translate "Matricule" %}</th><th>{% translate "Nom" %}</th><th>{% translate "Spécialité" %}</th><th>{% translate "Équipe" %}</th><th class="num">{% translate "Coût horaire" %}</th><th>{% translate "Compte" %}</th><th></th></tr></thead>
+        <tbody>
+        {% for tech in technicians %}
+          <tr>
+            <td class="mono">{{ tech.employee_number }}</td>
+            <td class="fw-semibold">{{ tech }}{% if not tech.is_active %} <span class="badge-em b-muted">{% translate "inactif" %}</span>{% endif %}<div class="muted small fw-normal">{{ tech.function }}{% for skill in tech.skills.all %}{% if forloop.first %} · {% endif %}{{ skill.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</div></td>
+            <td>{{ tech.specialty|default:"—" }}</td>
+            <td>{{ tech.team|default:"—" }}</td>
+            <td class="num">{{ tech.hourly_rate|money }}</td>
+            <td>{% if tech.user %}<span class="badge-em b-green">{{ tech.user.username }}</span>{% else %}<span class="muted small">{% translate "aucun" %}</span>{% endif %}</td>
+            <td class="text-end">{% if user|can:"workforce.manage" %}<a href="{% url 'workforce:technician_update' tech.pk %}">{% translate "Modifier" %}</a>{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="empty-state">{% translate "Aucun technicien." %}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-xl-4">
+    <section class="card-em">
+      <div class="d-flex justify-content-between align-items-center mb-3"><h2 class="mb-0">{% translate "Équipes" %}</h2>{% if user|can:"workforce.manage" %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'workforce:team_create' %}">{% icon "plus" 16 %} {% translate "Équipe" %}</a>{% endif %}</div>
+      {% for team in teams %}
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom gap-2">
+          <div><div class="fw-semibold">{{ team.name }}{% if not team.is_active %} <span class="badge-em b-muted">{% translate "inactive" %}</span>{% endif %}</div><div class="muted small">{% translate "Chef" %} : {{ team.leader|default:"—" }} · {{ team.n }} {% translate "membre(s)" %}</div></div>
+          {% if user|can:"workforce.manage" %}<a class="small" href="{% url 'workforce:team_update' team.pk %}">{% translate "Modifier" %}</a>{% endif %}
+        </div>
+      {% empty %}
+        <p class="muted mb-0">{% translate "Aucune équipe." %}</p>
+      {% endfor %}
+    </section>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Saisir des mesures" %} · {{ equipment.code }}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{{ equipment.get_absolute_url }}?onglet=mesures">{{ equipment.code }}</a> › {% translate "Saisir des mesures" %}</div>
+<div class="page-head">
+  <div><h1>{% translate "Saisir des mesures" %}</h1><p class="sub">{{ equipment }}</p></div>
+  <div class="pills" role="group" aria-label="{% translate 'Type de saisie' %}">
+    {% for value, label in kinds %}<a class="pill{% if kind == value %} active{% endif %}" href="?type={{ value }}">{{ label }}</a>{% endfor %}
+  </div>
+</div>
+{% if not grid %}
+  <div class="card-em empty-state">
+    {% translate "Aucun point de mesure actif pour ce type de saisie sur cet équipement." %}
+    {% if user|can:"condition.manage" %}<div class="mt-2"><a class="btn btn-primary" href="{% url 'condition:point_create' equipment.pk %}">{% translate "Créer un point de mesure" %}</a></div>{% endif %}
+  </div>
+{% else %}
+<form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+  <input type="hidden" name="kind" value="{{ kind }}">
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+  <div class="row g-3">
+    <div class="col-xl-8">
+      <section class="card-em">
+        <h2>{% translate "Valeurs" %}</h2>
+        <p class="muted small">{% translate "Laissez vide ce qui n'a pas été mesuré. Virgule ou point décimal acceptés." %}</p>
+        <div class="table-responsive"><table class="table-em measure-grid">
+          <thead><tr><th>{% translate "Point" %}</th><th>{% translate "Paramètre" %}</th><th class="num">{% translate "Valeur" %}</th></tr></thead>
+          <tbody>
+          {% for row in grid %}
+            {% for cell in row.cells %}
+              <tr>
+                {% if forloop.first %}<td rowspan="{{ row.cells|length }}"><span class="fw-semibold">{{ row.point.name }}</span><div class="muted small">{{ row.point.code }}{% if row.point.direction %} · {{ row.point.get_direction_display }}{% endif %}</div></td>{% endif %}
+                <td><label for="{{ cell.name }}">{{ cell.parameter.name }}</label></td>
+                <td class="num"><div class="d-inline-flex align-items-center gap-2"><input class="form-control" id="{{ cell.name }}" name="{{ cell.name }}" value="{{ cell.value }}" inputmode="decimal" autocomplete="off"><span class="muted small" style="min-width:48px;text-align:left">{{ cell.parameter.unit }}</span></div></td>
+              </tr>
+            {% endfor %}
+          {% endfor %}
+          </tbody>
+        </table></div>
+      </section>
+    </div>
+    <div class="col-xl-4">
+      <section class="card-em">
+        <h2>{% translate "Contexte" %}</h2>
+        {% include "partials/_field.html" with field=form.measured_at %}
+        {% include "partials/_field.html" with field=form.technician %}
+        {% if kind == "vibration" %}
+          {% include "partials/_field.html" with field=form.rotation_speed %}
+          {% include "partials/_field.html" with field=form.load_condition %}
+        {% endif %}
+        {% if kind == "oil" %}
+          {% include "partials/_field.html" with field=form.oil_type %}
+          <div class="row"><div class="col-6">{% include "partials/_field.html" with field=form.operating_hours %}</div><div class="col-6">{% include "partials/_field.html" with field=form.oil_hours %}</div></div>
+          {% include "partials/_field.html" with field=form.laboratory %}
+          {% include "partials/_field.html" with field=form.lab_report_number %}
+          {% include "partials/_field.html" with field=form.lab_conclusion %}
+        {% endif %}
+        {% include "partials/_field.html" with field=form.observations %}
+        {% include "partials/_field.html" with field=form.report %}
+      </section>
+    </div>
+  </div>
+  <div class="form-actions mt-3">
+    <a class="btn btn-outline-secondary" href="{{ equipment.get_absolute_url }}?onglet=mesures">{% translate "Annuler" %}</a>
+    <button class="btn btn-primary" type="submit">{% translate "Enregistrer les mesures" %}</button>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

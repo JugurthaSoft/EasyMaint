@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% if managed_user %}{{ managed_user }}{% else %}{% translate "Nouvel utilisateur" %}{% endif %}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'accounts:user_list' %}">{% translate "Utilisateurs" %}</a> › {% if managed_user %}{{ managed_user }}{% else %}{% translate "Nouveau" %}{% endif %}</div>
+<div class="page-head"><div><h1>{% if managed_user %}{{ managed_user }}{% else %}{% translate "Nouvel utilisateur" %}{% endif %}</h1></div></div>
+<form method="post" novalidate class="card-em" style="max-width:720px">{% csrf_token %}
+  {% include "partials/_form.html" %}
+  <div class="form-actions">
+    <a class="btn btn-outline-secondary" href="{% url 'accounts:user_list' %}">{% translate "Annuler" %}</a>
+    <button class="btn btn-primary" type="submit">{% translate "Enregistrer" %}</button>
+  </div>
+</form>
+{% endblock %}

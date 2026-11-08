@@ -1,0 +1,10 @@
+{% load i18n %}<div class="table-wrap">
+  <table class="table-em">
+    <thead><tr><th>{% translate "Niveau" %}</th><th>{% translate "Équipement · point" %}</th><th>{% translate "Paramètre" %}</th><th class="num">{% translate "Dernière valeur" %}</th><th>{% translate "Depuis" %}</th><th>{% translate "Statut" %}</th><th>{% translate "DI / OT" %}</th><th></th></tr></thead>
+    <tbody>
+    {% for alert in alerts %}{% include "condition/_alert_row.html" %}{% empty %}
+      <tr><td colspan="8" class="empty-state">{% translate "Aucune alerte." %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>

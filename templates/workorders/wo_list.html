@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Ordres de travail" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% translate "Ordres de travail" %}</h1>
+    <p class="sub">{% if new_requests %}<a href="{% url 'workorders:request_list' %}">{% blocktranslate count n=new_requests %}{{ n }} nouvelle demande à traiter{% plural %}{{ n }} nouvelles demandes à traiter{% endblocktranslate %}</a>{% else %}{% translate "Suivi de toutes les interventions." %}{% endif %}</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'workorders:wo_export' %}?{{ request.GET.urlencode }}">{% icon "download" %} {% translate "Excel" %}</a>
+    {% if user|can:"workorders.manage" or user|can:"workorders.create_direct" %}<a class="btn btn-primary" href="{% url 'workorders:wo_create' %}">{% icon "plus" %} {% translate "Nouvel OT" %}</a>{% endif %}
+  </div>
+</div>
+<form id="wo-filters" method="get" hx-get="{% url 'workorders:wo_list' %}" hx-target="#wo-results" hx-push-url="true" hx-trigger="change, input changed delay:300ms from:#wo-q, submit">
+  <div class="pills mb-3" role="group" aria-label="{% translate 'Filtrer par statut' %}">
+    {% for key, label, count in pills %}
+      <label class="pill{% if current_status == key %} active{% endif %}"><input class="visually-hidden" type="radio" name="statut" value="{{ key }}"{% if current_status == key %} checked{% endif %}>{{ label }} <span class="n">{{ count }}</span></label>
+    {% endfor %}
+  </div>
+  <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+    <input class="form-control" style="max-width:380px" id="wo-q" type="search" name="q" value="{{ filters.q }}" placeholder="{% translate 'N° OT, équipement, intitulé, technicien…' %}" aria-label="{% translate 'Rechercher' %}">
+    <select class="form-select" style="max-width:200px" name="type" aria-label="{% translate 'Type' %}">
+      <option value="">{% translate "Tous les types" %}</option>
+      {% for value, label in kinds %}<option value="{{ value }}"{% if filters.type == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <label class="form-check d-flex align-items-center gap-2 mb-0"><input class="form-check-input" type="checkbox" name="retard" value="1"{% if filters.retard == "1" %} checked{% endif %}> {% translate "En retard uniquement" %}</label>
+  </div>
+</form>
+<div id="wo-results">{% include "workorders/_wo_results.html" %}</div>
+{% endblock %}

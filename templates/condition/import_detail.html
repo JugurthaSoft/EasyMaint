@@ -1,0 +1,121 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{{ imp.original_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumb-em"><a href="{% url 'condition:import_list' %}">{% translate "Imports" %}</a> › {{ imp.original_name }}</div>
+<div class="page-head">
+  <div>
+    <h1>{{ imp.original_name }}</h1>
+    <p class="sub">{% translate "Envoyé le" %} {{ imp.created_at|date:"d/m/Y H:i" }}{% if imp.created_by %} {% translate "par" %} {{ imp.created_by }}{% endif %}
+      · <span class="badge-em {% if imp.status == 'done' %}b-green{% elif imp.status == 'draft' %}b-blue{% else %}b-gray{% endif %}">{{ imp.get_status_display }}</span></p>
+  </div>
+  <a class="btn btn-outline-secondary" href="{% url 'condition:import_file' imp.pk %}">{% icon "download" %} {% translate "Fichier d'origine" %}</a>
+</div>
+
+{% if imp.status == 'done' %}
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-md-3"><div class="card-em"><div class="small muted">{% translate "Mesures importées" %}</div><div class="fs-3 fw-semibold">{{ imp.imported }}</div></div></div>
+    <div class="col-6 col-md-3"><div class="card-em"><div class="small muted">{% translate "Tournées créées" %}</div><div class="fs-3 fw-semibold">{{ imp.sessions_created }}</div></div></div>
+    <div class="col-6 col-md-3"><div class="card-em"><div class="small muted">{% translate "Doublons ignorés" %}</div><div class="fs-3 fw-semibold">{{ imp.skipped }}</div></div></div>
+    <div class="col-6 col-md-3"><div class="card-em"><div class="small muted">{% translate "Lignes refusées" %}</div><div class="fs-3 fw-semibold">{{ imp.rejected }}</div></div></div>
+  </div>
+  <p class="muted">{% translate "Importé le" %} {{ imp.imported_at|date:"d/m/Y H:i" }} · {{ imp.total_rows }} {% translate "lignes lues" %}</p>
+  {% if sessions %}
+  <section class="card-em mb-3">
+    <h2>{% translate "Tournées créées" %}</h2>
+    <div class="table-wrap"><table class="table-em">
+      <thead><tr><th>{% translate "Date" %}</th><th>{% translate "Type" %}</th><th>{% translate "Équipement" %}</th><th>{% translate "Technicien" %}</th></tr></thead>
+      <tbody>{% for s in sessions %}<tr><td class="mono"><a href="{{ s.get_absolute_url }}">{{ s.measured_at|date:"d/m/Y H:i" }}</a></td><td>{{ s.get_kind_display }}</td><td>{{ s.equipment.code }}</td><td>{{ s.technician|default:"—" }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </section>
+  {% endif %}
+  {% include "condition/_import_errors.html" with errors=imp.errors %}
+
+{% elif imp.status == 'cancelled' %}
+  <div class="alert alert-secondary">{% translate "Import abandonné : aucune mesure n'a été enregistrée." %}</div>
+
+{% elif read_error %}
+  <div class="alert alert-danger">{{ read_error }}</div>
+
+{% else %}
+  {% if truncated %}<div class="alert alert-warning">{% blocktranslate %}Le fichier dépasse la limite : seules les premières lignes sont prises en compte. Découpez-le pour importer le reste.{% endblocktranslate %}</div>{% endif %}
+
+  <form method="post" action="{% url 'condition:import_mapping' imp.pk %}" class="card-em mb-3">{% csrf_token %}
+    <h2>1. {% translate "Correspondance des colonnes" %}</h2>
+    <p class="small muted">{% blocktranslate %}Indiquez quelle colonne du fichier contient chaque information. Deux dispositions sont possibles : une mesure par ligne (colonnes Paramètre et Valeur), ou une colonne par paramètre (à choisir dans le tableau de droite). Les deux peuvent se combiner.{% endblocktranslate %}</p>
+    <div class="row g-3">
+      <div class="col-lg-5">
+        {% for f in field_rows %}
+          <div class="mb-2">
+            <label class="form-label small mb-1" for="f-{{ f.code }}">{{ f.label }}{% if f.required %} <span class="req">*</span>{% endif %}</label>
+            <select class="form-select form-select-sm" name="f-{{ f.code }}" id="f-{{ f.code }}">
+              <option value="">—</option>
+              {% for h in headers %}<option value="{{ h.index }}"{% if h.name == f.selected %} selected{% endif %}>{{ h.name }}</option>{% endfor %}
+            </select>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="col-lg-7">
+        <div class="table-wrap"><table class="table-em">
+          <thead><tr><th>{% translate "Colonne du fichier" %}</th><th>{% translate "Exemples" %}</th><th>{% translate "Paramètre (une colonne par paramètre)" %}</th></tr></thead>
+          <tbody>
+          {% for h in headers %}
+            <tr>
+              <td class="fw-semibold">{{ h.name }}</td>
+              <td class="small mono">{{ h.samples|join:" · "|truncatechars:50 }}</td>
+              <td>{% if h.field %}<span class="small muted">{% translate "utilisée comme champ" %}</span>{% else %}
+                <select class="form-select form-select-sm" name="h-{{ h.index }}" aria-label="{{ h.name }}">
+                  <option value="">{% translate "— ignorer —" %}</option>
+                  {% for p in parameters %}<option value="{{ p.code }}"{% if p.code == h.parameter %} selected{% endif %}>{{ p.code }} · {{ p.name }}</option>{% endfor %}
+                </select>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+    <div class="row g-2 align-items-end mt-2">
+      <div class="col-md-6">
+        <label class="form-label small mb-1" for="profile_name">{% translate "Mémoriser comme format (facultatif)" %}</label>
+        <input class="form-control form-control-sm" type="text" name="profile_name" id="profile_name" maxlength="150" value="{{ imp.profile.name|default:'' }}" placeholder="{% translate 'Par exemple : Collecteur vibratoire, Laboratoire huile' %}">
+      </div>
+      <div class="col-md-6 text-md-end"><button class="btn btn-outline-primary" type="submit">{% translate "Appliquer la correspondance" %}</button></div>
+    </div>
+  </form>
+
+  {% if problems %}
+    <div class="alert alert-warning">{% for p in problems %}<div>{{ p }}</div>{% endfor %}</div>
+  {% else %}
+    <section class="card-em mb-3">
+      <h2>2. {% translate "Aperçu" %}</h2>
+      <div class="d-flex flex-wrap gap-3 mb-3">
+        <span class="badge-em b-green">{{ new_count }} {% translate "mesures à importer" %}</span>
+        <span class="badge-em b-blue">{{ analysis.sessions }} {% translate "tournées" %}</span>
+        <span class="badge-em b-gray">{{ analysis.duplicates }} {% translate "doublons ignorés" %}</span>
+        <span class="badge-em {% if analysis.rejected %}b-red{% else %}b-gray{% endif %}">{{ analysis.rejected }} {% translate "lignes refusées" %}</span>
+        <span class="small muted align-self-center">{{ analysis.total_rows }} {% translate "lignes lues" %}</span>
+      </div>
+      {% if preview %}
+      <div class="table-wrap"><table class="table-em">
+        <thead><tr><th class="num">{% translate "Ligne" %}</th><th>{% translate "Date" %}</th><th>{% translate "Équipement" %}</th><th>{% translate "Point" %}</th><th>{% translate "Paramètre" %}</th><th class="num">{% translate "Valeur" %}</th><th>{% translate "Technicien" %}</th></tr></thead>
+        <tbody>{% for it in preview %}<tr><td class="num muted">{{ it.line }}</td><td class="mono text-nowrap">{{ it.measured_at|date:"d/m/Y H:i" }}</td><td>{{ it.equipment.code }}</td><td>{{ it.point.code }}</td><td>{{ it.parameter.code }}</td><td class="num">{{ it.value|number }} {{ it.parameter.unit }}</td><td>{{ it.technician|default:"—" }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+      {% if more_count %}<p class="small muted mt-2">{% blocktranslate count n=more_count %}… et {{ n }} autre mesure.{% plural %}… et {{ n }} autres mesures.{% endblocktranslate %}</p>{% endif %}
+      {% endif %}
+    </section>
+    {% include "condition/_import_errors.html" with errors=errors %}
+  {% endif %}
+
+  <div class="form-actions">
+    <form method="post" action="{% url 'condition:import_cancel' imp.pk %}">{% csrf_token %}<button class="btn btn-outline-secondary" type="submit">{% translate "Abandonner" %}</button></form>
+    {% if not problems %}
+      {% if too_many %}<div class="alert alert-danger mb-0">{% translate "Trop de mesures pour un seul import : découpez le fichier." %}</div>
+      {% elif new_count %}
+      <form method="post" action="{% url 'condition:import_confirm' imp.pk %}">{% csrf_token %}
+        <button class="btn btn-primary" type="submit">{% blocktranslate count n=new_count %}Importer {{ n }} mesure{% plural %}Importer {{ n }} mesures{% endblocktranslate %}</button>
+      </form>
+      {% endif %}
+    {% endif %}
+  </div>
+  <p class="small muted mt-2">{% translate "Les mesures sont enregistrées comme une saisie manuelle : niveaux calculés avec les seuils en vigueur à leur date, alertes et règles de déclenchement appliquées. Les lignes refusées ne sont pas importées." %}</p>
+{% endif %}
+{% endblock %}

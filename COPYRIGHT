@@ -1,0 +1,14 @@
+EasyMaint — gestion de maintenance assistée par ordinateur (GMAO) pour les PME industrielles
+Copyright (C) 2026 Jamil Khalfalla et contributeurs
+
+Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier selon les
+termes de la GNU Affero General Public License telle que publiée par la Free Software
+Foundation, version 3 de la licence (AGPL-3.0-only).
+
+Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE GARANTIE, sans
+même la garantie implicite de QUALITÉ MARCHANDE ou d'ADÉQUATION À UN USAGE PARTICULIER.
+Voir la GNU Affero General Public License pour plus de détails (fichier LICENSE).
+
+Si vous proposez une version modifiée d'EasyMaint à des utilisateurs par un réseau (service
+en ligne, SaaS), la licence vous oblige à leur proposer le code source de cette version :
+renseignez son adresse dans EASYMAINT_SOURCE_URL, elle s'affiche dans la page « À propos ».

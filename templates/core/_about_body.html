@@ -1,0 +1,11 @@
+{% load i18n %}
+<p><strong>EasyMaint</strong> · {% translate "version" %} <span class="mono">{{ version }}</span><br>
+{% translate "Gestion de maintenance assistée par ordinateur pour les PME industrielles." %}</p>
+<p class="mb-2">© 2026 Jamil Khalfalla {% translate "et contributeurs" %}.</p>
+<p>{% blocktranslate %}Ce logiciel est libre : vous pouvez le redistribuer et le modifier selon les termes de la <strong>GNU Affero General Public License version 3</strong> (AGPL-3.0) publiée par la Free Software Foundation. Il est fourni SANS AUCUNE GARANTIE ; voir le fichier LICENSE fourni avec le logiciel.{% endblocktranslate %}</p>
+<p>{% translate "Code source :" %}
+  {% if source_url %}<a href="{{ source_url }}" rel="noopener">{{ source_url }}</a>
+  {% else %}{% translate "fourni avec l'installation (dossier d'EasyMaint sur le serveur) ; il peut aussi être demandé à l'exploitant de ce service." %}{% endif %}</p>
+<p class="small muted">{% translate "Installation, mise en service, formation et développements sur mesure : services proposés par l'auteur." %}</p>
+<h2 class="h6 mt-3">{% translate "Composants libres utilisés" %}</h2>
+<ul class="small mb-0">{% for name, licence in components %}<li>{{ name }} · {{ licence }}</li>{% endfor %}</ul>

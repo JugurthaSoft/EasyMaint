@@ -1,0 +1,44 @@
+{% extends "base.html" %}{% load i18n easymaint %}
+{% block title %}{% translate "Maintenance préventive" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% translate "Maintenance préventive" %}</h1><p class="sub">{% translate "Les OT sont générés automatiquement chaque nuit, et après chaque relevé de compteur." %}</p></div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'preventive:planning' %}">{% translate "Planning" %}</a>
+    {% if user|can:"preventive.manage" %}<a class="btn btn-primary" href="{% url 'preventive:plan_create' %}">{% icon "plus" %} {% translate "Nouveau plan" %}</a>{% endif %}
+  </div>
+</div>
+
+<section class="tiles mb-3" aria-label="{% translate 'Indicateurs du préventif' %}">
+  <div class="tile"><span class="lbl">{% blocktranslate with d=compliance.days %}Préventif réalisé · {{ d }} jours{% endblocktranslate %}</span><span class="val">{% if compliance.realization_rate is not None %}{{ compliance.realization_rate }} %{% else %}—{% endif %}</span><span class="sub">{% blocktranslate with r=compliance.realized t=compliance.due %}{{ r }} réalisés sur {{ t }} échus{% endblocktranslate %}</span></div>
+  <div class="tile"><span class="lbl">{% translate "Respect du planning" %}</span><span class="val">{% if compliance.on_time_rate is not None %}{{ compliance.on_time_rate }} %{% else %}—{% endif %}</span><span class="sub">{% blocktranslate with n=compliance.on_time %}{{ n }} réalisés à l'échéance d'origine{% endblocktranslate %}</span></div>
+  <div class="tile"><span class="lbl">{% translate "Plans actifs" %}</span><span class="val">{{ rows|length }}</span><span class="sub">{% translate "affichés avec les filtres actuels" %}</span></div>
+</section>
+
+<form class="d-flex flex-wrap gap-2 mb-3" method="get">
+  <input class="form-control" style="max-width:340px" type="search" name="q" value="{{ filters.q }}" placeholder="{% translate 'Code, intitulé, équipement…' %}" aria-label="{% translate 'Rechercher' %}">
+  <label class="form-check d-flex align-items-center gap-2 mb-0"><input class="form-check-input" type="checkbox" name="inactifs" value="1"{% if filters.inactifs == "1" %} checked{% endif %} data-autosubmit> {% translate "Afficher les plans désactivés" %}</label>
+  <button class="btn btn-outline-secondary" type="submit">{% translate "Filtrer" %}</button>
+</form>
+
+<div class="table-wrap">
+  <table class="table-em">
+    <thead><tr><th>{% translate "Code" %}</th><th>{% translate "Plan" %}</th><th>{% translate "Équipement" %}</th><th>{% translate "Déclenchement" %}</th><th>{% translate "Prochaine échéance" %}</th><th>{% translate "OT en cours" %}</th></tr></thead>
+    <tbody>
+    {% for row in rows %}
+      <tr>
+        <td class="text-nowrap"><a class="fw-semibold mono" href="{{ row.plan.get_absolute_url }}">{{ row.plan.code }}</a></td>
+        <td>{{ row.plan.name }}{% if not row.plan.is_active %} <span class="badge-em b-muted">{% translate "désactivé" %}</span>{% endif %}</td>
+        <td class="text-nowrap"><a href="{{ row.plan.equipment.get_absolute_url }}">{{ row.plan.equipment.code }}</a></td>
+        <td class="small">{{ row.plan.trigger_summary }}</td>
+        <td class="mono text-nowrap{% if row.late %} text-danger fw-semibold{% endif %}">{% if row.next_date %}{{ row.next_date|date:"d/m/Y" }}{% if row.plan.uses_meter and not row.plan.uses_calendar %} <span class="muted small fw-normal">({% translate "estimée" %})</span>{% endif %}{% else %}—{% endif %}</td>
+        <td class="text-nowrap">{% if row.pending %}<a href="{{ row.pending.get_absolute_url }}" class="mono">{{ row.pending.number }}</a> <span class="badge-em {{ row.pending.status_badge }}">{{ row.pending.get_status_display }}</span>{% else %}<span class="muted small">—</span>{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6" class="empty-state">{% translate "Aucun plan préventif." %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="muted small mt-2">{% translate "Taux calculés sur les OT préventifs dont l'échéance d'origine tombe dans la période ; un OT annulé compte comme non réalisé." %}</p>
+{% endblock %}
