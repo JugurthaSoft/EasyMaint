@@ -1,29 +1,32 @@
-# Contribuer à EasyMaint
+# Contributing to EasyMaint
 
-Merci de votre intérêt ! Les corrections, traductions (arabe, anglais), améliorations et nouvelles
-fonctions sont bienvenues.
+**English** | [Français](CONTRIBUTING.fr.md)
 
-## Principes du projet
+Thank you for your interest! Fixes, translations (Arabic and others), improvements and new features are welcome.
 
-- **Pas de fausse fonctionnalité** : une fonction livrée est complète, testée et documentée.
-- **Ne jamais retirer une fonction existante** sans discussion préalable.
-- Toute donnée métier hérite de `TenantScopedModel` et passe par `objects` (filtré sur l'entreprise) :
-  voir [docs/architecture.md](docs/architecture.md).
-- Chaque écran vérifie un droit (`CapabilityRequiredMixin` ou `require_capability`) : le test
-  `apps/core/tests/test_security.py` parcourt toutes les adresses et échoue sinon.
-- Aucun script dans les gabarits (politique de sécurité du contenu) : les comportements vont dans `static/js`.
-- Textes de l'interface en français, marqués pour la traduction (`{% translate %}`, `gettext`).
+## Project principles
 
-## Proposer une modification
+- **No fake features**: a delivered feature is complete, tested and documented.
+- **Never remove an existing feature** without prior discussion.
+- All business data inherits from `TenantScopedModel` and goes through `objects` (filtered on the current
+  company): see [docs/architecture.md](docs/architecture.md).
+- Every page checks a permission (`CapabilityRequiredMixin` or `require_capability`): the test
+  `apps/core/tests/test_security.py` visits every URL and fails otherwise.
+- No scripts inside templates (Content Security Policy): page behaviour goes in `static/js`.
+- Interface texts are written in French (the reference language) and marked for translation
+  (`{% translate %}`, `gettext`). Every text must have its English translation in
+  `locale/en/LC_MESSAGES/django.po`: `apps/core/tests/test_i18n.py` fails otherwise (see `locale/LISEZMOI.md`).
 
-1. Créer une branche, développer avec ses tests.
-2. Vérifier : `ruff check --select F,E9,I .` puis `docker compose run --rm web pytest` (tous les tests passent,
-   migrations comprises).
-3. Mettre à jour la documentation (`docs/`) et `docs/CHANGELOG.md`.
-4. Ouvrir une demande de fusion en expliquant le besoin métier.
+## Proposing a change
 
-En contribuant, vous acceptez que votre code soit diffusé sous la licence du projet (AGPL-3.0).
+1. Create a branch and develop with tests.
+2. Check: `ruff check --select F,E9,I .` then `docker compose run --rm web pytest` (all tests pass,
+   migrations and translations included).
+3. Update the documentation (`docs/`) and `docs/CHANGELOG.md`.
+4. Open a pull request explaining the maintenance need behind it.
 
-## Signaler une faille de sécurité
+By contributing, you agree that your code is distributed under the project's license (AGPL-3.0).
 
-Ne pas ouvrir de ticket public : écrire directement à l'auteur du projet.
+## Reporting a security issue
+
+Please do not open a public issue: write to contact@jugurthasoft.com.
