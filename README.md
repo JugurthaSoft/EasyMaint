@@ -4,7 +4,7 @@
 
 *"The functional power of a professional CMMS, with the ease of use of a modern application."*
 
-**Version 1.1.0** · free software under the **AGPL-3.0** license · © 2026 Jamil Khalfalla and contributors · a [JugurthaSoft](https://jugurthasoft.com) product
+**Version 1.1.0** · free software under the **AGPL-3.0** license · © 2026 Jamil KHALFALLAH and contributors · a [JugurthaSoft](https://jugurthasoft.com) product
 
 Source code: https://github.com/jugurthasoft/easymaint · Contact: contact@jugurthasoft.com
 

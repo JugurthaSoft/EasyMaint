@@ -4,7 +4,7 @@
 
 « La puissance fonctionnelle d'une GMAO professionnelle, avec la simplicité d'utilisation d'une application moderne. »
 
-**Version 1.1.0** · logiciel libre sous licence **AGPL-3.0** · © 2026 Jamil Khalfalla et contributeurs · un logiciel [JugurthaSoft](https://jugurthasoft.com)
+**Version 1.1.0** · logiciel libre sous licence **AGPL-3.0** · © 2026 Jamil KHALFALLAH et contributeurs · un logiciel [JugurthaSoft](https://jugurthasoft.com)
 
 Code source : https://github.com/jugurthasoft/easymaint · Contact : contact@jugurthasoft.com
 

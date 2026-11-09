@@ -1,5 +1,5 @@
 # Traduction anglaise d'EasyMaint.
-# Copyright (C) 2026 Jamil Khalfalla et contributeurs
+# Copyright (C) 2026 Jamil KHALFALLAH et contributeurs
 # Ce fichier est distribué sous la même licence qu'EasyMaint (AGPL-3.0).
 #
 msgid ""
@@ -8,7 +8,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-11-08 20:00+0100\n"
 "PO-Revision-Date: 2026-11-08 20:00+0100\n"
-"Last-Translator: Jamil Khalfalla et contributeurs\n"
+"Last-Translator: Jamil KHALFALLAH et contributeurs\n"
 "Language-Team: English\n"
 "Language: en\n"
 "MIME-Version: 1.0\n"
